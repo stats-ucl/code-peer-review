@@ -1,0 +1,24 @@
+# R files
+\.Rhistory
+\.RData
+\.Rapp.history
+
+# Environment files (contains sensitive tokens)
+\.Renviron
+\.env
+
+# Student data (privacy)
+student_list\.csv
+submissions/
+progress_reports/
+email_templates/
+reminders/
+
+# Output files
+*\.csv
+*\.png
+*\.pdf
+
+# Temporary files
+*\.tmp
+*\.log

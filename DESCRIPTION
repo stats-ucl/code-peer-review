@@ -1,0 +1,27 @@
+Package: codeinput
+Title: Code Peer Review
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Yulong", "Chen",
+            email = "yulong.chen.20@ucl.ac.uk",
+            role = c("aut", "cre", "cph")),
+    person("Yinan", "Chen",
+            email = "yinan.chen.23@ucl.ac.uk",
+            role = c("aut")),
+    person("Jiahan", "Xie",
+            email = "jiahan.xie.23@ucl.ac.uk",
+            role = c("aut")))
+Description: Code peer review with GitHub.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2.9000
+Imports:
+  gh,
+  dplyr,
+  readr,
+  purrr,
+  glue,
+  ggplot2,
+  lubridate,
+  scales
