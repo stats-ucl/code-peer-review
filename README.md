@@ -132,17 +132,17 @@ LOCAL_SUBMISSIONS_PATH <- "submissions/"     # Path to submission folders
 
 ### For Teachers
 
-1. Setup (one-time): Run codeinput::run_setup() to configure your environment.
+1. Setup (one-time): Run `codeinput::run_setup()` to configure your environment.
 
 2. Prepare data:
-   - Create the student_list.csv file.
-   - Download student submissions and organize them into the submissions/ folder.
+   - Create the `student_list.csv` file.
+   - Download student submissions and organize them into the `submissions/` folder.
 
-3. Run automation: Execute the main_automation_script.r script.
+3. Run automation: Execute the `main_automation_script.R` script.
 
 4. Distribute access: Send the generated emails to students.
 
-5. Monitor progress: Use the monitor_progress_script.r to track progress and send reminders.
+5. Monitor progress: Use the `monitor_progress_script.R` to track progress and send reminders.
 
 ### For Students
 
@@ -170,4 +170,4 @@ The scripts generate several files for distribution and monitoring:
 
 ## Troubleshooting
 
-
+See a list of common issues [here](troubleshooting.md)
