@@ -199,5 +199,5 @@ The scripts generate several files for distribution and monitoring:
 
 ## Troubleshooting
 
-See a list of common issues [here](troubleshooting.md).
+See a list of common issues [here](md/troubleshooting.md).
 If you come across something not included here, please raise an [Issue](https://github.com/stats-ucl/code-peer-review/issues).

@@ -22,3 +22,4 @@ reminders/
 # Temporary files
 *\.tmp
 *\.log
+.Rproj.user
