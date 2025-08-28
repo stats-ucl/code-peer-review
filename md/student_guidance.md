@@ -1,26 +1,28 @@
 # Student Guide: Code Peer Review with GitHub
 
-## What is Code Peer Review? Why on Github?
+## What is Code Peer Review?
 
-Code peer review is when you look at another student's code and give them helpful feedback, just like when you review each other's essays. At the same time, other students will review your code and give you feedback. This helps everyone learn from each other and improve their coding skills. Learning to review code and use GitHub will help you in your career because:
+Code peer review is when you look at another student's code and give them helpful feedback, just like when you review each others' essays.
+At the same time, other students will review your code and give you feedback. This helps everyone learn from each other and improve their coding skills.
+Learning to review code will help you in your career because:
 
-- Most tech companies use GitHub or similar tools
 - Code review is a standard practice in professional programming
 - It teaches you to read and understand other people's code
 - It helps you write clearer, better code
 - It's a valuable skill to mention in job applications
 
-## What is GitHub?
 
-GitHub is a website that programmers use to share and work on code together. Think of it like Google Docs, but specifically designed for computer code. Don't worry if you've never used it before - this guide will walk you through everything step by step!
+## What is GitHub? Why use it?
 
+[GitHub](https://github.com/) is a website that programmers use to share and work on code together. Think of it like Google Docs, but specifically designed for computer code. Don't worry if you've never used it before - this guide will walk you through everything step by step!
+Learning to use GitHub is another useful skill and may help your career; most tech companies use GitHub or similar tools.
 
 
 ## Getting Started
 
 ### Step 1: Create Your GitHub Account
 
-If you already have one under some other email account and want to use it for the code review, then please go to the next section. Otherwise:
+If you already have one under some other email account and want to use it for the code review, then please jump to the next section. Otherwise:
 
 1. Go to [github.com](https://github.com)
 2. Click "Sign up" 
@@ -30,6 +32,7 @@ If you already have one under some other email account and want to use it for th
 6. Verify your email when GitHub sends you a message
 
 ### Step 2: Upload Your Assignment to Moodle
+
 - Submit your code assignment to Moodle as you normally would
 - **Also include your GitHub username** in your submission or as requested by your teacher
 
@@ -49,6 +52,7 @@ If you already have one under some other email account and want to use it for th
 When you're reviewing someone else's code, you'll do two things:
 
 #### Part 1: Fill Out a Review Form (Required)
+
 You'll answer some questions about the code you're reviewing, such as:
 - Is the code easy to read and understand?
 - Does the code seem to work correctly?
@@ -64,6 +68,7 @@ You'll answer some questions about the code you're reviewing, such as:
 5. Click "Submit new issue" when you're done
 
 #### Part 2: Suggest Code Changes (Optional)
+
 If you spot a bug or have an idea for improvement, you can suggest specific changes to the code.
 
 **How to do this:**
@@ -74,7 +79,6 @@ If you spot a bug or have an idea for improvement, you can suggest specific chan
 5. Click "Propose changes"
 6. Click "Create pull request"
 7. Add a description of your suggestion and click "Create pull request"
-
 
 
 ## After the Review: Receiving Feedback on Your Code
@@ -94,6 +98,9 @@ If you spot a bug or have an idea for improvement, you can suggest specific chan
 
 ## Tips
 
+The [ROpenSci](https://devguide.ropensci.org/softwarereview_intro.html) initiative has some great great resources for code peer review.
+Below are some helpful tips.
+
 ### Common GitHub Terms Explained
 
 - **Repository (Repo)**: Your private folder containing your code
@@ -102,7 +109,7 @@ If you spot a bug or have an idea for improvement, you can suggest specific chan
 - **Branch**: Different versions of your code (don't worry about this too much for now)
 - **Commit**: Saving changes to your code
 
-### Writing Good Reviews
+### Writing Good Code Reviews
 - **Be kind and constructive**: Instead of "This is wrong," try "Have you considered trying this approach?"
 - **Be specific**: Point out exactly what you're referring to
 - **Highlight good things too**: If someone did something clever, tell them!

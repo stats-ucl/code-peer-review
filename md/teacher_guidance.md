@@ -2,7 +2,8 @@
 
 ## Overview
 
-This guide provides instructions for implementing a code peer review system using GitHub for undergraduate computing modules. With the new automation scripts, most of the setup process is now automated, making implementation much faster and more reliable. The system integrates with Moodle for familiar student submission and leverages GitHub's collaborative features for peer review.
+This guide provides instructions for using the `codeinput` R package to automate the setup and management of code peer review assignments on GitHub.
+The system integrates with Moodle for familiar student submission and leverages GitHub's collaborative features for peer review.
 
 ## Prerequisites
 
@@ -13,27 +14,26 @@ This guide provides instructions for implementing a code peer review system usin
 - Assessment materials and marking criteria prepared
 
 
+## Quick Start
 
-## Quick Start with Automation Scripts
+### Step 1: Installation and Setup (One-Time)
 
-### 1. Initial Setup (One-Time)
-
-**Download and organize the automation scripts:**
-```
-project_folder/
-├── setup_config.R
-├── main_automation_script.R
-├── github_functions.R
-├── file_management.R
-├── monitor_progress.R
-└── README.md
-```
-
-**Run the setup script:**
+* **Install the `codeinput` package**:
 
 ```r
-# In RStudio/R console
-source("setup_config.R")
+# Install devtools if you don't have it
+if (!requireNamespace("devtools", quietly = TRUE)) {
+    install.packages("devtools")
+}
+
+# Install the codeinput package from GitHub
+devtools::install_github("https://github.com/stats-ucl/code-peer-review")
+```
+
+* **Run the setup function**: Once installed, load the package and run the setup function.
+This will install required packages, guide you through GitHub authentication, and create the necessary folder structure.
+```r
+library(codeinput)
 run_setup()
 ```
 
@@ -47,6 +47,7 @@ This automated setup will:
 ### 2. Prepare Your Data
 
 **Create your student list (`student_list.csv`):**
+
 ```csv
 student_id,github_username,ucl_email,name
 12345,alice_github,alice.smith@ucl.ac.uk,Alice Smith
@@ -69,7 +70,9 @@ submissions/
 ### 3. Run the Automation
 
 **Configure the main script:**
+
 Edit these variables in `main_automation_script.R`:
+
 ```r
 ORG_NAME <- "UCL-StatSci-STAT0001-2025"      # Your GitHub organization
 ASSIGNMENT_NAME <- "assignment-1"            # Current assignment
@@ -89,9 +92,10 @@ source("main_automation_script.R")
 - ✅ Sets repository permissions
 - ✅ Generates email templates and distribution URLs
 
-### 4. Distribute Access Information
+### 4. Distribute and Monitor
 
 The script generates several files:
+
 - `student_repo_links.csv` - Repository URLs for each student
 - `email_templates/` - Personalized emails for each student
 - `reviewer_assignments.csv` - Complete assignment matrix
@@ -107,7 +111,8 @@ source("monitor_progress.R")
 report <- run_progress_check()
 ```
 
-**What you get:**
+This script provides:
+
 - Completion rates across all students
 - Visual progress charts
 - Detailed analytics
@@ -115,13 +120,15 @@ report <- run_progress_check()
 
 
 
-The section below is a very detailed explanation of the workflow. If you have any trouble executing the above procedure, please refer to the section below, and the `README.md` document under the setup folder.
+The section below is a very detailed explanation of the workflow.
+If you have any trouble executing the above procedure, please refer to the section below, and the `README.md` document under the setup folder.
 
 ## Detailed Process Walkthrough
 
 ### GitHub Organization Setup
 
 **Create your organization (one-time):**
+
 1. Go to https://github.com/settings/organizations
 2. Click "New organization"
 3. Choose organization name: `UCL-[Department]-[Module]-[Year]`
@@ -226,37 +233,9 @@ run_progress_check()
 ```
 
 
+### Troubleshooting
+See [troubleshooting](md/troublshooting.md) file.
 
-### Troubleshooting with Automation
-
-**Common Issues and Solutions:**
-
-**Script Failures:**
-```r
-# Check configuration
-source("setup_config.R")
-validate_configuration()
-
-# Test GitHub connection
-test_github_connection()
-```
-
-**Student Access Problems:**
-- Verify GitHub usernames in `student_list.csv`
-- Check repository permissions in GitHub organization
-- Use monitoring script to identify access issues
-
-**File Upload Issues:**
-- Check file sizes (GitHub limit: 100MB per file)
-- Verify file paths in submissions folders
-- Review console output for specific error messages
-
-**Incomplete Reviews:**
-```r
-# Generate targeted reminders
-source("monitor_progress.R")
-run_progress_check()  # Creates reminder emails automatically
-```
 
 ### Advanced Features
 
@@ -336,16 +315,7 @@ Consider having all students review all submissions for maximum learning.
 - Update marking criteria
 
 
-
-## Resource Requirements
-
-### Technical Infrastructure
-- **GitHub Organization**: Free for educational use
-- **Automation Scripts**: Provided, no additional cost
-- **R/RStudio**: Free, open-source software
-- **Computing Resources**: Minimal - runs on standard academic workstations
-
-### Time Investment
+### Approximate Time Investment
 
 **Initial Setup (First Time):**
 - Script configuration: 30 minutes
@@ -359,56 +329,4 @@ Consider having all students review all submissions for maximum learning.
 - Monitoring and reminders: 10 minutes weekly
 - **Total: ~20 minutes + weekly monitoring**
 
-### Support Requirements
 
-**For Students:**
-- Provide comprehensive student guide
-- Offer optional GitHub tutorial sessions
-- Establish peer mentoring system
-- Create backup support during lab sessions
-
-**For Teaching Staff:**
-- Train additional instructors on script usage
-- Establish backup procedures for technical failures
-- Document customizations and local adaptations
-- Plan for software updates and maintenance
-
-
-
-## Success Metrics and Expectations
-
-### Short-term Indicators
-- >90% successful repository setup
-- >80% completion of peer reviews within deadline
-- <5% technical support requests requiring instructor intervention
-- Positive student feedback on learning experience
-
-### Long-term Outcomes
-- Improved code quality in subsequent assignments
-- Increased student confidence with collaborative tools
-- Enhanced peer learning culture in the module
-- Transferable skills development for industry preparation
-
-
-
-## Emergency Procedures and Backup Plans
-
-**GitHub Service Outages:**
-- Monitor GitHub status page
-- Extend deadlines if necessary
-- Use manual review process as fallback
-- Communicate clearly with students
-
-**Script Failures:**
-- Revert to manual repository creation
-- Use provided troubleshooting guide
-- Contact technical support resources
-- Document issues for future improvement
-
-**Student Technical Difficulties:**
-- Provide alternative access methods
-- Offer individual technical support
-- Consider accommodation for accessibility needs
-- Maintain flexible deadline policies
-
-Remember: The automation scripts handle the complex technical setup, allowing you to focus on the pedagogical aspects of peer review and student learning outcomes. Start small with one assignment, gather feedback, and iterate based on your experience and student needs.

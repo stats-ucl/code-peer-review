@@ -53,3 +53,35 @@ Keep student data files private and secure.
 Regularly rotate your GitHub tokens to enhance security.
 
 Monitor access to your GitHub organization and remove collaborators who no longer need access.
+
+
+### Script Failures
+
+```r
+# Check configuration
+source("setup_config.R")
+validate_configuration()
+
+# Test GitHub connection
+test_github_connection()
+```
+
+### Student Access Problems
+
+- Verify GitHub usernames in `student_list.csv`
+- Check repository permissions in GitHub organization
+- Use monitoring script to identify access issues
+
+### File Upload Issues
+
+- Check file sizes (GitHub limit: 100MB per file)
+- Verify file paths in submissions folders
+- Review console output for specific error messages
+
+### Incomplete Reviews
+
+```r
+# Generate targeted reminders
+source("monitor_progress.R")
+run_progress_check()  # Creates reminder emails automatically
+```
