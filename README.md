@@ -1,29 +1,25 @@
-# GitHub Code Peer Review Automation Scripts
+# GitHub Code Peer Review Automation
 
-This collection of R scripts automates the setup and management of code peer review assignments using GitHub repositories integrated with Moodle submissions.
+This R package provides a suite of tools to automate the setup and management of code peer review assignments using GitHub.
+It's designed to integrate with existing workflows, such as using Moodle for submissions, while leveraging the collaborative power of GitHub.
 
-## Overview
+## Key Features
 
 The system allows you to:
-- Automatically create private GitHub repositories for each student
-- Upload student code submissions from local folders
-- Randomly assign peer reviewers
-- Set up structured peer review templates
-- Monitor progress and send reminders
-- Generate distribution emails and reports
 
+- **Automated Repository Creation**: Automatically create private GitHub repositories for each student.
 
+- **Submission Management**: Easily upload student code submissions from local folders to their dedicated repositories.
 
-## Prerequisites
+- **Randomized Peer Review Assignment**: Randomly assign peer reviewers to each student.
 
-### Software Requirements
+- **Structured Feedback**: Set up repositories with structured peer review templates using GitHub Issues.
 
-- R (≥ 4.0)
-- Required R packages (automatically installed by setup script):
-  - `gh` (GitHub API)
-  - `dplyr`, `readr`, `purrr` (data manipulation)
-  - `glue` (string interpolation)
-  - `ggplot2`, `lubridate`, `scales` (visualization and dates)
+- **Progress Monitoring**: Track the progress of peer reviews and send automated reminders.
+
+- **Email Notifications**: Generate email templates to distribute repository information and review assignments to students.
+
+## Setup
 
 ### GitHub Setup
 
@@ -36,28 +32,41 @@ The system allows you to:
 ### Data Requirements
 
 1. **Student List**: CSV file with student IDs, GitHub usernames, emails, and names
-2. **Submission Files**: Student code files organized in folders by student ID
-
-
+2. **Submission Files**: Student code files organized in folders by student ID. These can be downloaded from Moodle submissions.
 
 ## Quick Start
 
-### 1. Initial Setup
+### 1. Installation
+
+You can install the package and its dependencies from your R console:
+
 ```r
-# Run the setup script first
-source("setup_config.R")
+# Install the devtools package if you don't have it
+if (!requireNamespace("devtools", quietly = TRUE)) {
+    install.packages("devtools")
+}
+
+# Install the package from GitHub
+devtools::install_github("https://github.com/stats-ucl/code-peer-review")
+```
+
+### 2. Initial Setup
+
+The `run_setup()` function will guide you through the initial configuration process.
+This includes setting up your GitHub authentication, creating the necessary directory structure, and generating sample configuration files.
+
+```r
+# Load the package
+library(codeinput)
+
+# Run the setup script
 run_setup()
 ```
 
-This will:
-- Install required R packages
-- Help you set up GitHub authentication
-- Create necessary directory structure
-- Generate sample configuration files
+### 3. Prepare Your Data
 
-### 2. Prepare Your Data
+**Student List (`student_list.csv`):** Create a CSV file with the following columns: student_id, github_username, ucl_email, and name.
 
-**Student List (`student_list.csv`):**
 ```csv
 student_id,github_username,ucl_email,name
 12345,alice_github,alice@ucl.ac.uk,Alice Smith
@@ -65,7 +74,8 @@ student_id,github_username,ucl_email,name
 ```
 
 **Submission Files:**
-Place each student's submitted files in `submissions/[student_id]/` folders:
+Organize each student's submitted files in `submissions/[student_id]/` folders:
+
 ```
 submissions/
 ├── 12345/
@@ -76,103 +86,24 @@ submissions/
 │   └── data_cleaning.R
 ```
 
-### 3. Run Main Automation
+### 4. Run Main Automation Script
+
+The `main_automation_script.R` orchestrates the entire process. Before running, make sure to configure the necessary variables at the top of the script.
+
 ```r
 # Configure and run the main script
 source("main_automation_script.R")
 ```
 
-### 4. Monitor Progress
+### 5. Monitor Progress
+
+You can monitor the progress of the peer reviews using the `run_progress_check()` function from the `monitor_progress_script.R` file.
+
 ```r
 # Check review completion status
 source("monitor_progress.R")
 report <- run_progress_check()
 ```
-
-
-
-## File Structure
-
-```
-project/
-├── setup_config.R              # Initial setup and configuration
-├── main_automation_script.R    # Main orchestration script
-├── github_functions.R          # GitHub API helper functions
-├── file_management.R           # File upload and assignment functions
-├── monitor_progress.R          # Progress tracking and reporting
-├── student_list.csv            # Student information (you create this)
-├── submissions/                # Student submission folders
-│   ├── 12345/
-│   └── 12346/
-├── email_templates/            # Generated email templates
-├── progress_reports/           # Progress tracking outputs
-└── reminders/                  # Reminder emails for incomplete reviews
-```
-
-## Script Details
-
-### `setup_config.R`
-**Purpose:** Initial environment setup and configuration validation
-
-**Key Functions:**
-- `run_setup()` - Complete setup process
-- `setup_github_token()` - GitHub authentication setup
-- `validate_configuration()` - Check all requirements
-- `test_github_connection()` - Verify GitHub access
-
-**Usage:**
-```r
-source("setup_config.R")
-run_setup()  # First time setup
-validate_configuration()  # Check before running main script
-```
-
-### `main_automation_script.R`
-**Purpose:** Main orchestration script that sets up the entire peer review system
-
-**What it does:**
-1. Creates GitHub repositories for each student
-2. Sets up repository structure (branches, templates)
-3. Uploads student files from local folders
-4. Randomly assigns peer reviewers (2 per student by default)
-5. Sets repository permissions
-6. Generates distribution emails and URLs
-
-**Configuration variables:**
-```r
-ORG_NAME <- "UCL-StatSci-STAT001-2025"
-ASSIGNMENT_NAME <- "assignment-1"
-LOCAL_SUBMISSIONS_PATH <- "submissions/"
-```
-
-### `github_functions.R`
-**Purpose:** GitHub API operations and repository management
-
-**Key Functions:**
-- `create_student_repo()` - Create private repository
-- `setup_repo_structure()` - Create branches and templates
-- `set_reviewer_permissions()` - Assign collaborator access
-- `get_repo_info()` - Retrieve repository URLs
-
-### `file_management.R`
-**Purpose:** File handling and peer review assignment logic
-
-**Key Functions:**
-- `upload_student_files()` - Upload files from local folders
-- `assign_peer_reviewers()` - Random reviewer assignment
-- `generate_distribution_info()` - Create URLs and assignment data
-- `generate_email_templates()` - Create notification emails
-
-### `monitor_progress.R`
-**Purpose:** Track completion and generate progress reports
-
-**Key Functions:**
-- `monitor_review_progress()` - Check completion status
-- `generate_progress_report()` - Create summary statistics
-- `create_progress_visualizations()` - Generate charts
-- `generate_reminder_emails()` - Send completion reminders
-
-
 
 ## Configuration
 
@@ -197,45 +128,33 @@ ASSIGNMENT_NAME <- "assignment-1"            # Assignment identifier
 LOCAL_SUBMISSIONS_PATH <- "submissions/"     # Path to submission folders
 ```
 
-
-
 ## Workflow
 
 ### For Teachers
 
-1. **Setup** (one-time):
-   ```r
-   source("setup_config.R")
-   run_setup()
-   ```
+1. Setup (one-time): Run codeinput::run_setup() to configure your environment.
 
-2. **Prepare data**:
-   - Export student list from UCL systems
-   - Download submissions from Moodle
-   - Organize files in `submissions/` folders
+2. Prepare data:
+   - Create the student_list.csv file.
+   - Download student submissions and organize them into the submissions/ folder.
 
-3. **Run automation**:
-   ```r
-   source("main_automation_script.R")
-   ```
+3. Run automation: Execute the main_automation_script.r script.
 
-4. **Distribute access**:
-   - Send generated emails to students
-   - Share repository URLs
+4. Distribute access: Send the generated emails to students.
 
-5. **Monitor progress**:
-   ```r
-   source("monitor_progress.R")
-   run_progress_check()
-   ```
+5. Monitor progress: Use the monitor_progress_script.r to track progress and send reminders.
 
 ### For Students
 
-Students receive:
-- Link to their personal repository
-- Instructions for accessing peer review assignments
-- Email notifications when reviews are submitted
-- Links to review other students' code
+Students will receive an email containing:
+
+- A link to their personal, private GitHub repository.
+
+- Instructions for accessing their peer review assignments.
+
+- Links to the repositories of the students they need to review.
+
+- Email notifications when they receive feedback.
 
 ## Output Files
 
@@ -249,63 +168,6 @@ The scripts generate several files for distribution and monitoring:
 - `progress_reports/` - Visualization and analysis files
 
 
-
 ## Troubleshooting
 
-### Common Issues
 
-**GitHub Authentication Fails**
-- Check your token has correct permissions
-- Verify token is set in environment
-- Test with `test_github_connection()`
-
-**Repository Creation Fails**
-- Ensure you have admin access to the organization
-- Check organization name spelling
-- Verify API rate limits haven't been exceeded
-
-**File Upload Fails**
-- Check file paths and permissions
-- Verify files aren't too large (GitHub has 100MB limit)
-- Ensure file formats are supported
-
-**Students Can't Access Repositories**
-- Verify GitHub usernames are correct
-- Check repository permissions were set
-- Confirm students have GitHub accounts
-
-### Error Recovery
-
-If the main script fails partway through:
-1. Check the console output for specific errors
-2. Fix the underlying issue
-3. Re-run from the main script - it will skip already-created repositories
-4. Use `validate_configuration()` to check setup
-
-### Getting Help
-
-1. Check the GitHub API documentation: https://docs.github.com/en/rest
-2. Review R package documentation: `?gh`, `?dplyr`
-3. Validate your configuration: `validate_configuration()`
-4. Test individual functions with sample data
-
-## Security Considerations
-
-- **Never commit your GitHub token** to version control
-- Use `.gitignore` to exclude sensitive files
-- Keep student data files local and private
-- Regularly rotate GitHub tokens
-- Monitor organization access and remove unused collaborators
-
-
-
-## Customization
-
-### Changing Review Template
-Edit the template in `github_functions.R` in the `create_github_templates()` function.
-
-### Adjusting Reviewer Assignments
-Modify the assignment logic in `file_management.R` in the `assign_peer_reviewers()` function.
-
-### Adding Notification Features
-Extend the email generation functions in `file_management.R` to integrate with your email system.
