@@ -132,6 +132,22 @@ LOCAL_SUBMISSIONS_PATH <- "submissions/"     # Path to submission folders
 
 ### For Teachers
 
+```mermaid
+graph TD
+    subgraph "Preparation"
+        A[1. Configure Environment & Verify Setup] --> B[2. Collect Student Data & Prepare Submissions];
+    end
+
+    subgraph "Execution"
+        B --> C{3. Run Automation Script};
+    end
+
+    subgraph "Distribution & Monitoring"
+        C --> E[4. Distribute Repository Links & Assignments to Students];
+        E --> F[5. Monitor Student Progress & Provide Feedback];
+    end
+```
+
 1. Setup (one-time): Run `codeinput::run_setup()` to configure your environment.
 
 2. Prepare data:
@@ -145,6 +161,19 @@ LOCAL_SUBMISSIONS_PATH <- "submissions/"     # Path to submission folders
 5. Monitor progress: Use the `monitor_progress_script.R` to track progress and send reminders.
 
 ### For Students
+
+```mermaid
+%%{init: {'themeVariables': { 'fontSize': '12px'}}}%%
+graph TD
+    A[1. Register and verify a GitHub account] --> B{2. Fill in GitHub username when submitting};
+    B --> C[3. Check email for repository invitations];
+    C --> D[4. Accept invitation and enter repository];
+    D --> E[5. Answer items in Issues using the template];
+    E --> F{6. Received a reminder email?};
+    F -- Yes --> G[Complete the review ASAP];
+    F -- No --> G;
+    G --> H[7. Reply to or close the issue];
+```
 
 Students will receive an email containing:
 
