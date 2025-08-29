@@ -1,4 +1,6 @@
-# GitHub Code Peer Review Automation
+GitHub Code Peer Review Automation
+<img src="hexbadge.png" align="right" width="100" />
+================
 
 This R package provides a suite of tools to automate the setup and management of code peer review assignments using GitHub.
 It's designed to integrate with existing workflows, such as using Moodle for submissions, while leveraging the collaborative power of GitHub.
