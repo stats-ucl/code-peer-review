@@ -1,5 +1,5 @@
 GitHub Code Peer Review Automation
-<img src="hexbadge.png" align="right" width="100" />
+<img src="hexbadge.png" align="right" width="200" />
 ================
 
 This R package provides a suite of tools to automate the setup and management of code peer review assignments using GitHub.
