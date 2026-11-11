@@ -88,6 +88,12 @@ validate_student_data <- function(students) {
 #' @return Invisibly returns the GitHub API response.
 #' @keywords internal
 put_repo_file <- function(org_name, repo_name, github_path, content_encoded, message) {
+  if (length(content_encoded) == 0) {
+    content_encoded <- ""
+  } else {
+    content_encoded <- paste(content_encoded, collapse = "")
+  }
+
   existing <- tryCatch(
     gh::gh(
       "GET /repos/{owner}/{repo}/contents/{path}",
@@ -489,7 +495,7 @@ Good luck with the peer review process!
     org_name = org_name,
     repo_name = repo_name,
     github_path = "submission/.gitkeep",
-    content_encoded = base64enc::base64encode( raw(0) ),
+    content_encoded = base64enc::base64encode(charToRaw("\n")),
     message = "Create submission folder"
   )
 

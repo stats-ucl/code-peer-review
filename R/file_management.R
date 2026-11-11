@@ -63,6 +63,9 @@ upload_single_file <- function(local_path, github_path, repo_name, org_name) {
       content_raw <- readBin(local_path, "raw", file_size)
       content_encoded <- base64enc::base64encode(content_raw)
     }
+    if (length(content_encoded) == 0) {
+      content_encoded <- ""
+    }
 
     put_repo_file(
       org_name = org_name,
