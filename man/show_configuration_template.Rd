@@ -6,6 +6,9 @@
 \usage{
 show_configuration_template()
 }
+\value{
+Invisibly returns the template string.
+}
 \description{
-Configuration helper
+Prints an example configuration and call to \code{run_automation()}.
 }

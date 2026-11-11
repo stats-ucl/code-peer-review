@@ -2,10 +2,17 @@
 % Please edit documentation in R/setup_config.R
 \name{test_github_connection}
 \alias{test_github_connection}
-\title{Quick test function}
+\title{Test GitHub connection}
 \usage{
-test_github_connection()
+test_github_connection(org_name = NULL)
+}
+\arguments{
+\item{org_name}{Optional GitHub organization name to test access against.}
+}
+\value{
+Logical \code{TRUE} if connection succeeds, \code{FALSE} otherwise.
 }
 \description{
-Quick test function
+Verifies GitHub authentication via \code{gh} and optionally checks access to a
+specified GitHub organization.
 }

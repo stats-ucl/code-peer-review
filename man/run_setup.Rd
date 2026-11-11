@@ -4,8 +4,16 @@
 \alias{run_setup}
 \title{Main set-up function}
 \usage{
-run_setup()
+run_setup(output_dir = "output")
+}
+\arguments{
+\item{output_dir}{Path to the output directory. Defaults to \code{"output"}.}
+}
+\value{
+Invisibly returns the result of \code{validate_configuration()}.
 }
 \description{
-Main set-up function
+Guides the user through setting up the environment, GitHub authentication,
+directories (\verb{submissions/} and \verb{output/}), sample student list, \code{.gitignore},
+and starter scripts.
 }

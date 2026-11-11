@@ -90,46 +90,64 @@ submissions/
 │   └── data_cleaning.R
 ```
 
-### 4. Run Main Automation Script
+### 4. Run Main Automation
 
-The `main_automation_script.R` orchestrates the entire process. Before running, make sure to configure the necessary variables at the top of the script.
+Run `run_automation()` directly (or via the generated `main_automation_script.R` starter script):
 
 ```r
-# Configure and run the main script
-source("main_automation_script.R")
+library(codeinput)
+
+results <- run_automation(
+  org_name = "UCL-StatSci-STAT0001-2025",
+  assignment_name = "assignment-1",
+  submissions_path = "submissions",
+  output_dir = "output",
+  reviews_per_student = 2,
+  deadline = "2025-04-15",
+  instructor_name = "Course Instructor"
+)
 ```
 
 ### 5. Monitor Progress
 
-You can monitor the progress of the peer reviews using the `run_progress_check()` function from the `monitor_progress_script.R` file.
+You can monitor the progress of peer reviews using `run_progress_check()` (or via `monitor_progress_script.R`):
 
 ```r
-# Check review completion status
-source("monitor_progress.R")
-report <- run_progress_check()
+library(codeinput)
+
+report <- run_progress_check(
+  org_name = "UCL-StatSci-STAT0001-2025",
+  assignment_name = "assignment-1",
+  output_dir = "output",
+  deadline = "2025-04-15",
+  instructor_name = "Course Instructor"
+)
 ```
 
 ## Configuration
 
-### Environment Variables
-Set your GitHub token as an environment variable:
+### GitHub Authentication
+Set up your GitHub token using `usethis` and `gitcreds` (recommended) or `.Renviron`:
 
-**Option 1: .Renviron file (recommended)**
-```
-GITHUB_TOKEN=your_token_here
-```
-
-**Option 2: Session variable**
+**Option 1: `gitcreds` credential store (recommended)**
 ```r
-Sys.setenv(GITHUB_TOKEN = "your_token_here")
+usethis::create_github_token(scopes = c("repo", "admin:org", "user"))
+gitcreds::gitcreds_set()
 ```
 
-### Script Configuration
-Edit these variables in `main_automation_script.R`:
+**Option 2: Project `.Renviron` file**
 ```r
-ORG_NAME <- "UCL-StatSci-STAT001-2025"      # Your GitHub organization
+usethis::edit_r_environ(scope = "project")
+# Add: GITHUB_TOKEN=your_token_here
+```
+
+### Workflow Parameters
+Configure these parameters when calling `run_automation()` or editing `main_automation_script.R`:
+```r
+ORG_NAME <- "UCL-StatSci-STAT0001-2025"      # Your GitHub organization
 ASSIGNMENT_NAME <- "assignment-1"            # Assignment identifier
-LOCAL_SUBMISSIONS_PATH <- "submissions/"     # Path to submission folders
+SUBMISSIONS_PATH <- "submissions"            # Path to submission folders
+OUTPUT_DIR <- "output"                       # Directory for generated files
 ```
 
 ## Workflow
@@ -191,14 +209,17 @@ Students will receive an email containing:
 
 ## Output Files
 
-The scripts generate several files for distribution and monitoring:
+All generated files for distribution and monitoring are saved in the `output/` directory:
 
-- `student_repo_links.csv` - Repository URLs for each student
-- `reviewer_assignments.csv` - Who reviews whom
-- `teacher_summary.csv` - Complete overview for instructors
-- `email_templates/` - Individual email files for each student
-- `progress_check_[date].csv` - Progress monitoring data
-- `progress_reports/` - Visualization and analysis files
+- `output/student_repo_links.csv` - Repository URLs for each student
+- `output/reviewer_assignments.csv` - Balanced assignment matrix (who reviews whom)
+- `output/teacher_summary.csv` - Complete overview for instructors
+- `output/email_templates/` - Individual email files for each student and `email_merge_data.csv`
+- `output/progress_check_[date].csv` - Repository-level progress monitoring data
+- `output/student_progress_[date].csv` - Student-level completion summary
+- `output/reviewer_progress_[date].csv` - Reviewer-level completion summary
+- `output/progress_reports/` - Visualization plots (`completion_distribution.png`, `issues_vs_pulls.png`)
+- `output/reminders/` - Targeted reminder emails for reviewers with pending reviews
 
 
 ## Troubleshooting

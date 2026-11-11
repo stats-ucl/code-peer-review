@@ -4,8 +4,17 @@
 \alias{create_gitignore}
 \title{Create gitignore file}
 \usage{
-create_gitignore()
+create_gitignore(output_dir = "output", overwrite = FALSE)
+}
+\arguments{
+\item{output_dir}{Path to the output directory to ignore. Defaults to \code{"output"}.}
+
+\item{overwrite}{Logical; whether to overwrite an existing \code{.gitignore}. Defaults to \code{FALSE}.}
+}
+\value{
+Invisibly returns \code{".gitignore"}.
 }
 \description{
-Create gitignore file
+Creates a \code{.gitignore} file configured to ignore R session files,
+\code{.Renviron}, \code{student_list.csv}, \verb{submissions/}, and the \verb{output/} folder.
 }

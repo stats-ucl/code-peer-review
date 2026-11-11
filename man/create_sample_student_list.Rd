@@ -4,15 +4,17 @@
 \alias{create_sample_student_list}
 \title{Create sample student list CSV file}
 \usage{
-create_sample_student_list(filename = "student_list.csv")
+create_sample_student_list(filename = "student_list.csv", overwrite = FALSE)
+}
+\arguments{
+\item{filename}{Path to the CSV file to create. Defaults to \code{"student_list.csv"}.}
+
+\item{overwrite}{Logical; whether to overwrite an existing file without prompting.}
+}
+\value{
+Invisibly returns the path to \code{filename}.
 }
 \description{
-\tabular{llll}{
-   student_id \tab github_username \tab ucl_email \tab name \cr
-   12345 \tab student1_github \tab student1@ucl.ac.uk \tab Alice Smith \cr
-   12346 \tab student2_github \tab student2@ucl.ac.uk \tab Bob Jones \cr
-   12347 \tab student3_github \tab student3@ucl.ac.uk \tab Carol White \cr
-   12348 \tab student4_github \tab student4@ucl.ac.uk \tab David Brown \cr
-   12349 \tab student5_github \tab student5@ucl.ac.uk \tab Eve Davis \cr
-}
+Generates a template \code{student_list.csv} file with columns:
+\code{student_id}, \code{github_username}, \code{ucl_email}, and \code{name}.
 }

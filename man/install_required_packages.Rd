@@ -6,6 +6,10 @@
 \usage{
 install_required_packages()
 }
+\value{
+Logical \code{TRUE} invisibly if all packages are available.
+}
 \description{
-Install required packages
+Checks whether required packages for \code{codeinput} are installed and installs
+any missing packages.
 }

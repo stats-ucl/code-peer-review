@@ -4,8 +4,20 @@
 \alias{validate_configuration}
 \title{Validate configuration}
 \usage{
-validate_configuration()
+validate_configuration(
+  student_list_path = "student_list.csv",
+  submissions_path = "submissions"
+)
+}
+\arguments{
+\item{student_list_path}{Path to the student list CSV file. Defaults to \code{"student_list.csv"}.}
+
+\item{submissions_path}{Path to the submissions folder. Defaults to \code{"submissions"}.}
+}
+\value{
+Logical \code{TRUE} if configuration is valid, \code{FALSE} otherwise.
 }
 \description{
-Validate configuration
+Validates that GitHub authentication, \code{student_list.csv}, and the
+\verb{submissions/} directory are properly configured.
 }

@@ -6,6 +6,11 @@
 \usage{
 setup_github_token()
 }
+\value{
+Invisibly returns \code{NULL}.
+}
 \description{
-Set up GitHub token
+Guides the user through creating and storing a GitHub Personal Access Token
+(PAT) using \code{usethis::create_github_token()} and \code{gitcreds::gitcreds_set()},
+or via a project \code{.Renviron} file using \code{usethis::edit_r_environ()}.
 }

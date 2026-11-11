@@ -58,8 +58,9 @@ Monitor access to your GitHub organization and remove collaborators who no longe
 ### Script Failures
 
 ```r
+library(codeinput)
+
 # Check configuration
-source("setup_config.R")
 validate_configuration()
 
 # Test GitHub connection
@@ -81,7 +82,12 @@ test_github_connection()
 ### Incomplete Reviews
 
 ```r
-# Generate targeted reminders
-source("monitor_progress.R")
-run_progress_check()  # Creates reminder emails automatically
+library(codeinput)
+
+# Generate targeted reminders in output/reminders/
+run_progress_check(
+  org_name = "UCL-StatSci-STAT0001-2025",
+  assignment_name = "assignment-1",
+  output_dir = "output"
+)
 ```

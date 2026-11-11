@@ -1,90 +1,308 @@
 # GitHub API Helper Functions
 # Contains all GitHub-specific operations for the peer review system
 
-# Check GitHub authentication
+#' Check GitHub authentication
+#'
+#' Verifies that a valid GitHub token is configured and can authenticate with
+#' the GitHub API.
+#'
+#' @return Logical `TRUE` if authenticated; throws an error otherwise.
+#' @export
 check_github_auth <- function() {
   tryCatch({
-    user_info <- gh("GET /user")
-    cat(glue("Authenticated as: {user_info$login}\n"))
+    user_info <- gh::gh("GET /user")
+    cat(glue::glue("Authenticated as: {user_info$login}\n"))
     return(TRUE)
   }, error = function(e) {
-    stop("GitHub authentication failed. Please set GITHUB_TOKEN environment variable.")
+    stop(
+      "GitHub authentication failed. Run `setup_github_token()` or set GITHUB_TOKEN.",
+      call. = FALSE
+    )
   })
 }
 
-# Validate student data format
+#' Validate student data format
+#'
+#' Validates that the student data frame contains required columns
+#' (`student_id`, `github_username`, `ucl_email`, `name`), coerces `student_id`
+#' to character, and warns if any GitHub usernames are missing.
+#'
+#' @param students Data frame or tibble of student information.
+#'
+#' @return The validated `students` tibble (with `student_id` as character), invisibly.
+#' @export
 validate_student_data <- function(students) {
   required_cols <- c("student_id", "github_username", "ucl_email", "name")
   missing_cols <- setdiff(required_cols, names(students))
-  
+
   if (length(missing_cols) > 0) {
-    stop(glue("Missing required columns: {paste(missing_cols, collapse=', ')}"))
+    stop(
+      glue::glue("Missing required columns: {paste(missing_cols, collapse = ', ')}"),
+      call. = FALSE
+    )
   }
-  
-  # Check for missing GitHub usernames
-  missing_github <- students %>% filter(is.na(github_username) | github_username == "")
+
+  students <- dplyr::mutate(
+    students,
+    student_id = trimws(as.character(.data$student_id)),
+    github_username = trimws(as.character(.data$github_username))
+  )
+
+  if (anyDuplicated(students$student_id) > 0) {
+    dup_ids <- unique(students$student_id[duplicated(students$student_id)])
+    stop(
+      glue::glue("Duplicate student_id values found: {paste(dup_ids, collapse = ', ')}"),
+      call. = FALSE
+    )
+  }
+
+  missing_github <- dplyr::filter(
+    students,
+    is.na(.data$github_username) | .data$github_username == ""
+  )
   if (nrow(missing_github) > 0) {
-    warning(glue("Students missing GitHub usernames: {paste(missing_github$name, collapse=', ')}"))
+    warning(
+      glue::glue("Students missing GitHub usernames: {paste(missing_github$name, collapse = ', ')}"),
+      call. = FALSE
+    )
   }
-  
-  cat(glue("Validated data for {nrow(students)} students\n"))
+
+  cat(glue::glue("Validated data for {nrow(students)} students\n"))
+  invisible(students)
 }
 
-# Create a repository for a student
+#' Create or update a file in a GitHub repository (idempotent)
+#'
+#' Checks whether `github_path` already exists in the repository to obtain its
+#' `sha` before calling `PUT /repos/{owner}/{repo}/contents/{path}`.
+#'
+#' @param org_name GitHub organization or owner name.
+#' @param repo_name Repository name.
+#' @param github_path Destination path within the repository.
+#' @param content_encoded Base64-encoded file content string.
+#' @param message Commit message.
+#'
+#' @return Invisibly returns the GitHub API response.
+#' @keywords internal
+put_repo_file <- function(org_name, repo_name, github_path, content_encoded, message) {
+  existing <- tryCatch(
+    gh::gh(
+      "GET /repos/{owner}/{repo}/contents/{path}",
+      owner = org_name,
+      repo = repo_name,
+      path = github_path
+    ),
+    error = function(e) NULL
+  )
+
+  if (!is.null(existing) && !is.null(existing$sha)) {
+    gh::gh(
+      "PUT /repos/{owner}/{repo}/contents/{path}",
+      owner = org_name,
+      repo = repo_name,
+      path = github_path,
+      message = message,
+      content = content_encoded,
+      sha = existing$sha
+    )
+  } else {
+    gh::gh(
+      "PUT /repos/{owner}/{repo}/contents/{path}",
+      owner = org_name,
+      repo = repo_name,
+      path = github_path,
+      message = message,
+      content = content_encoded
+    )
+  }
+}
+
+#' Create a repository for a student
+#'
+#' Creates a private GitHub repository in `org_name` for a student's submission.
+#' If the repository already exists, returns `TRUE` without failing.
+#'
+#' @param repo_name Name of the repository to create.
+#' @param github_username Student's GitHub username.
+#' @param org_name GitHub organization name.
+#'
+#' @return Logical `TRUE` if created (or already exists), `FALSE` on error.
+#' @export
 create_student_repo <- function(repo_name, github_username, org_name) {
   tryCatch({
-    # Create repository
-    repo <- gh("POST /orgs/{org}/repos", 
-               org = org_name,
-               name = repo_name,
-               description = glue("Code submission repository for {github_username}"),
-               private = TRUE,
-               auto_init = TRUE)
-    
-    cat(glue("Created repository: {repo_name}\n"))
+    existing <- tryCatch(
+      gh::gh("GET /repos/{owner}/{repo}", owner = org_name, repo = repo_name),
+      error = function(e) NULL
+    )
+
+    if (!is.null(existing)) {
+      cat(glue::glue("Repository already exists: {repo_name}\n"))
+      return(TRUE)
+    }
+
+    gh::gh(
+      "POST /orgs/{org}/repos",
+      org = org_name,
+      name = repo_name,
+      description = glue::glue("Code submission repository for {github_username}"),
+      private = TRUE,
+      auto_init = TRUE,
+      has_issues = TRUE
+    )
+
+    cat(glue::glue("Created repository: {repo_name}\n"))
     return(TRUE)
   }, error = function(e) {
-    warning(glue("Failed to create repository {repo_name}: {e$message}"))
+    warning(glue::glue("Failed to create repository {repo_name}: {e$message}"))
     return(FALSE)
   })
 }
 
-# Set up repository structure (branches, templates, etc.)
-setup_repo_structure <- function(repo_name, org_name) {
+#' Set up repository structure (templates, README, submission folder, and optional branches)
+#'
+#' Configures the repository with a `README.md`, `submission/.gitkeep`,
+#' `.github/ISSUE_TEMPLATE/peer-review.md`, and the `peer-review` issue label.
+#' Note: Reviewer branches (`reviewer-1..N`) should be created *after* student
+#' files are uploaded using [create_reviewer_branches()] so that reviewer
+#' branches contain the uploaded submission files.
+#'
+#' @param repo_name Repository name.
+#' @param org_name GitHub organization name.
+#' @param create_branches Logical; if `TRUE`, also calls [create_reviewer_branches()].
+#'   Defaults to `FALSE` so branches can be created after file upload.
+#' @param reviews_per_student Number of reviewer branches to create if `create_branches = TRUE`.
+#'
+#' @return Logical `TRUE` on success, `FALSE` on error.
+#' @export
+setup_repo_structure <- function(repo_name,
+                                 org_name,
+                                 create_branches = FALSE,
+                                 reviews_per_student = 2) {
   tryCatch({
-    # Get main branch SHA
-    main_branch <- gh("GET /repos/{owner}/{repo}/git/ref/heads/main",
-                      owner = org_name, repo = repo_name)
-    main_sha <- main_branch$object$sha
-    
-    # Create reviewer branches
-    gh("POST /repos/{owner}/{repo}/git/refs",
-       owner = org_name, repo = repo_name,
-       ref = "refs/heads/reviewer-1",
-       sha = main_sha)
-    
-    gh("POST /repos/{owner}/{repo}/git/refs",
-       owner = org_name, repo = repo_name,
-       ref = "refs/heads/reviewer-2", 
-       sha = main_sha)
-    
-    # Create .github directory structure
+    # Create .github issue template and peer-review label
     create_github_templates(repo_name, org_name)
-    
-    # Create initial folder structure
+    create_peer_review_label(repo_name, org_name)
+
+    # Create initial folder structure and README
     create_folder_structure(repo_name, org_name)
-    
-    cat(glue("Set up structure for: {repo_name}\n"))
+
+    # Optionally create reviewer branches
+    if (create_branches) {
+      create_reviewer_branches(
+        repo_name = repo_name,
+        org_name = org_name,
+        reviews_per_student = reviews_per_student
+      )
+    }
+
+    cat(glue::glue("Set up structure for: {repo_name}\n"))
     return(TRUE)
   }, error = function(e) {
-    warning(glue("Failed to setup structure for {repo_name}: {e$message}"))
+    warning(glue::glue("Failed to setup structure for {repo_name}: {e$message}"))
     return(FALSE)
   })
 }
 
-# Create GitHub issue templates
+#' Create reviewer branches from the default branch
+#'
+#' Creates (or updates) `reviewer-1` through `reviewer-{reviews_per_student}`
+#' branches pointing to the latest commit on `main` (or the repository's default
+#' branch). Call this *after* uploading student submission files so reviewer
+#' branches include all submission files and templates.
+#'
+#' @param repo_name Repository name.
+#' @param org_name GitHub organization name.
+#' @param reviews_per_student Number of reviewer branches to create. Defaults to `2`.
+#'
+#' @return Logical `TRUE` on success, `FALSE` on error.
+#' @export
+create_reviewer_branches <- function(repo_name, org_name, reviews_per_student = 2) {
+  tryCatch({
+    repo_info <- gh::gh("GET /repos/{owner}/{repo}", owner = org_name, repo = repo_name)
+    default_branch <- repo_info$default_branch %||% "main"
+
+    branch_ref <- gh::gh(
+      "GET /repos/{owner}/{repo}/git/ref/heads/{branch}",
+      owner = org_name,
+      repo = repo_name,
+      branch = default_branch
+    )
+    main_sha <- branch_ref$object$sha
+
+    for (j in seq_len(reviews_per_student)) {
+      branch_name <- glue::glue("reviewer-{j}")
+      existing_ref <- tryCatch(
+        gh::gh(
+          "GET /repos/{owner}/{repo}/git/ref/heads/{branch}",
+          owner = org_name,
+          repo = repo_name,
+          branch = branch_name
+        ),
+        error = function(e) NULL
+      )
+
+      if (is.null(existing_ref)) {
+        gh::gh(
+          "POST /repos/{owner}/{repo}/git/refs",
+          owner = org_name,
+          repo = repo_name,
+          ref = glue::glue("refs/heads/{branch_name}"),
+          sha = main_sha
+        )
+      } else {
+        gh::gh(
+          "PATCH /repos/{owner}/{repo}/git/refs/heads/{branch}",
+          owner = org_name,
+          repo = repo_name,
+          branch = branch_name,
+          sha = main_sha,
+          force = TRUE
+        )
+      }
+    }
+
+    cat(glue::glue("Created {reviews_per_student} reviewer branch(es) for: {repo_name}\n"))
+    return(TRUE)
+  }, error = function(e) {
+    warning(glue::glue("Failed to create reviewer branches for {repo_name}: {e$message}"))
+    return(FALSE)
+  })
+}
+
+#' Ensure peer-review label exists in repository
+#'
+#' @param repo_name Repository name.
+#' @param org_name GitHub organization name.
+#'
+#' @return Invisibly returns `TRUE`.
+#' @keywords internal
+create_peer_review_label <- function(repo_name, org_name) {
+  tryCatch({
+    gh::gh(
+      "POST /repos/{owner}/{repo}/labels",
+      owner = org_name,
+      repo = repo_name,
+      name = "peer-review",
+      color = "0e8a16",
+      description = "Peer code review feedback"
+    )
+  }, error = function(e) {
+    # Ignore if label already exists (422)
+    NULL
+  })
+  invisible(TRUE)
+}
+
+#' Create GitHub issue templates
+#'
+#' Uploads `.github/ISSUE_TEMPLATE/peer-review.md` to a student's repository.
+#'
+#' @param repo_name Repository name.
+#' @param org_name GitHub organization name.
+#'
+#' @return Invisibly returns the GitHub API response.
+#' @export
 create_github_templates <- function(repo_name, org_name) {
-  # Peer review issue template
   peer_review_template <- '---
 name: Peer Review
 about: Template for peer code review
@@ -129,17 +347,27 @@ assignees: ""
 - Time spent on review: [approximate time]
 '
 
-  # Create the template file
-  gh("PUT /repos/{owner}/{repo}/contents/.github/ISSUE_TEMPLATE/peer-review.md",
-     owner = org_name, repo = repo_name,
-     message = "Add peer review issue template",
-     content = base64encode(charToRaw(peer_review_template)))
+  put_repo_file(
+    org_name = org_name,
+    repo_name = repo_name,
+    github_path = ".github/ISSUE_TEMPLATE/peer-review.md",
+    content_encoded = base64enc::base64encode(charToRaw(peer_review_template)),
+    message = "Add peer review issue template"
+  )
 }
 
-# Create initial folder structure
+#' Create initial folder structure
+#'
+#' Uploads the assignment `README.md` and `submission/.gitkeep` to the
+#' student repository.
+#'
+#' @param repo_name Repository name.
+#' @param org_name GitHub organization name.
+#'
+#' @return Invisibly returns `TRUE`.
+#' @export
 create_folder_structure <- function(repo_name, org_name) {
-  # Create README for assignment
-  readme_content <- glue('# Code Assignment Repository
+  readme_content <- glue::glue('# Code Assignment Repository
 
 This repository contains your code submission and peer review materials.
 
@@ -162,78 +390,180 @@ This repository contains your code submission and peer review materials.
 Good luck with the peer review process!
 ')
 
-  gh("PUT /repos/{owner}/{repo}/contents/README.md",
-     owner = org_name, repo = repo_name,
-     message = "Add initial README",
-     content = base64encode(charToRaw(readme_content)))
-  
-  # Create submission folder with placeholder
-  gh("PUT /repos/{owner}/{repo}/contents/submission/.gitkeep",
-     owner = org_name, repo = repo_name, 
-     message = "Create submission folder",
-     content = base64encode(charToRaw("")))
+  put_repo_file(
+    org_name = org_name,
+    repo_name = repo_name,
+    github_path = "README.md",
+    content_encoded = base64enc::base64encode(charToRaw(readme_content)),
+    message = "Add initial README"
+  )
+
+  put_repo_file(
+    org_name = org_name,
+    repo_name = repo_name,
+    github_path = "submission/.gitkeep",
+    content_encoded = base64enc::base64encode( raw(0) ),
+    message = "Create submission folder"
+  )
+
+  invisible(TRUE)
 }
 
-# Set reviewer permissions for a repository
-set_reviewer_permissions <- function(repo_name, student_id, reviewer_assignments, org_name) {
-  student_reviewers <- reviewer_assignments %>%
-    filter(reviewed_student_id == student_id)
-  
-  results <- map_dfr(1:nrow(student_reviewers), function(i) {
-    reviewer <- student_reviewers[i, ]
-    
+#' Set repository permissions for the submitting student and assigned reviewers
+#'
+#' Grants repository access (default `"push"`, i.e., write permission) to both
+#' the submitting student (author) and their assigned peer reviewers.
+#'
+#' @param repo_name Repository name.
+#' @param student_id Student ID of the repository author.
+#' @param reviewer_assignments Tibble returned by [assign_peer_reviewers()].
+#' @param org_name GitHub organization name.
+#' @param author_username Optional GitHub username of the submitting student. If
+#'   `NULL`, looked up from `reviewer_assignments`.
+#' @param permission Collaborator permission level (`"push"`, `"pull"`, `"triage"`,
+#'   `"maintain"`, or `"admin"`). `"write"` is automatically mapped to `"push"`.
+#'
+#' @return A tibble recording permission grant results for each user.
+#' @export
+set_reviewer_permissions <- function(repo_name,
+                                     student_id,
+                                     reviewer_assignments,
+                                     org_name,
+                                     author_username = NULL,
+                                     permission = "push") {
+  if (identical(permission, "write")) {
+    permission <- "push"
+  }
+
+  target_id <- as.character(student_id)
+  student_reviewers <- dplyr::filter(
+    reviewer_assignments,
+    as.character(.data$reviewed_student_id) == target_id
+  )
+
+  if (is.null(author_username) && nrow(student_reviewers) > 0) {
+    author_username <- student_reviewers$reviewed_github_username[1]
+  }
+
+  collaborators <- dplyr::tibble(
+    username = character(),
+    role = character()
+  )
+
+  if (!is.null(author_username) && !is.na(author_username) && nzchar(author_username)) {
+    collaborators <- dplyr::bind_rows(
+      collaborators,
+      dplyr::tibble(username = author_username, role = "author")
+    )
+  }
+
+  if (nrow(student_reviewers) > 0) {
+    collaborators <- dplyr::bind_rows(
+      collaborators,
+      dplyr::tibble(
+        username = student_reviewers$reviewer_github_username,
+        role = "reviewer"
+      )
+    )
+  }
+
+  collaborators <- dplyr::distinct(collaborators, .data$username, .keep_all = TRUE)
+
+  if (nrow(collaborators) == 0) {
+    return(dplyr::tibble(
+      repo_name = character(),
+      username = character(),
+      role = character(),
+      reviewer_username = character(),
+      success = logical(),
+      error = character()
+    ))
+  }
+
+  results <- purrr::map_dfr(seq_len(nrow(collaborators)), function(i) {
+    user <- collaborators$username[i]
+    role <- collaborators$role[i]
+
     tryCatch({
-      # Add collaborator with write permission
-      gh("PUT /repos/{owner}/{repo}/collaborators/{username}",
-         owner = org_name, repo = repo_name,
-         username = reviewer$reviewer_github_username,
-         permission = "write")
-      
-      cat(glue("Added {reviewer$reviewer_github_username} as collaborator to {repo_name}\n"))
-      
-      tibble(
+      gh::gh(
+        "PUT /repos/{owner}/{repo}/collaborators/{username}",
+        owner = org_name,
+        repo = repo_name,
+        username = user,
+        permission = permission
+      )
+
+      cat(glue::glue("Added {user} ({role}) as collaborator to {repo_name}\n"))
+
+      dplyr::tibble(
         repo_name = repo_name,
-        reviewer_username = reviewer$reviewer_github_username,
+        username = user,
+        role = role,
+        reviewer_username = user,
         success = TRUE,
-        error = NA
+        error = NA_character_
       )
     }, error = function(e) {
-      warning(glue("Failed to add {reviewer$reviewer_github_username} to {repo_name}: {e$message}"))
-      
-      tibble(
+      warning(glue::glue("Failed to add {user} ({role}) to {repo_name}: {e$message}"))
+
+      dplyr::tibble(
         repo_name = repo_name,
-        reviewer_username = reviewer$reviewer_github_username,
+        username = user,
+        role = role,
+        reviewer_username = user,
         success = FALSE,
         error = e$message
       )
     })
   })
-  
+
   return(results)
 }
 
-# Get repository URLs and information
+#' Get repository URLs and information
+#'
+#' @param repo_name Repository name.
+#' @param org_name GitHub organization name.
+#'
+#' @return Named list with `html_url`, `clone_url`, `issues_url`, and `pulls_url`.
+#' @export
 get_repo_info <- function(repo_name, org_name) {
   tryCatch({
-    repo <- gh("GET /repos/{owner}/{repo}", owner = org_name, repo = repo_name)
-    
+    repo <- gh::gh("GET /repos/{owner}/{repo}", owner = org_name, repo = repo_name)
+
     list(
       html_url = repo$html_url,
       clone_url = repo$clone_url,
-      issues_url = glue("{repo$html_url}/issues"),
-      pulls_url = glue("{repo$html_url}/pulls")
+      issues_url = as.character(glue::glue("{repo$html_url}/issues")),
+      pulls_url = as.character(glue::glue("{repo$html_url}/pulls"))
     )
   }, error = function(e) {
-    warning(glue("Failed to get info for {repo_name}: {e$message}"))
-    list(html_url = NA, clone_url = NA, issues_url = NA, pulls_url = NA)
+    warning(glue::glue("Failed to get info for {repo_name}: {e$message}"))
+    list(
+      html_url = NA_character_,
+      clone_url = NA_character_,
+      issues_url = NA_character_,
+      pulls_url = NA_character_
+    )
   })
 }
 
-# Check repository access for a user
+#' Check repository access for a user
+#'
+#' @param repo_name Repository name.
+#' @param username GitHub username.
+#' @param org_name GitHub organization name.
+#'
+#' @return Logical `TRUE` if `username` is a collaborator on `repo_name`, `FALSE` otherwise.
+#' @export
 check_repo_access <- function(repo_name, username, org_name) {
   tryCatch({
-    collab <- gh("GET /repos/{owner}/{repo}/collaborators/{username}",
-                 owner = org_name, repo = repo_name, username = username)
+    gh::gh(
+      "GET /repos/{owner}/{repo}/collaborators/{username}",
+      owner = org_name,
+      repo = repo_name,
+      username = username
+    )
     return(TRUE)
   }, error = function(e) {
     return(FALSE)

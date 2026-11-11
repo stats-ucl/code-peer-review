@@ -4,8 +4,23 @@
 \alias{create_directory_structure}
 \title{Create directory structure}
 \usage{
-create_directory_structure()
+create_directory_structure(
+  submissions_dir = "submissions",
+  output_dir = "output",
+  create_samples = TRUE
+)
+}
+\arguments{
+\item{submissions_dir}{Path to the local student submissions folder. Defaults to \code{"submissions"}.}
+
+\item{output_dir}{Path to the output directory for generated files. Defaults to \code{"output"}.}
+
+\item{create_samples}{Logical; whether to populate sample student submission folders. Defaults to \code{TRUE}.}
+}
+\value{
+Invisibly returns a character vector of created directories.
 }
 \description{
-Create directory structure
+Creates the \verb{submissions/} folder and the consolidated \verb{output/} directory
+(including \code{email_templates}, \code{progress_reports}, and \code{reminders} subfolders).
 }

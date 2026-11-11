@@ -15,13 +15,22 @@ Description: Code peer review with GitHub.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2.9000
 Imports:
-  gh,
+  base64enc,
   dplyr,
-  readr,
-  purrr,
-  glue,
+  gh,
+  gitcreds,
   ggplot2,
+  glue,
   lubridate,
-  scales
+  purrr,
+  readr,
+  rlang,
+  scales,
+  tidyr,
+  tools,
+  usethis
+Suggests:
+  testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
