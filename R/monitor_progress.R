@@ -142,7 +142,7 @@ monitor_review_progress <- function(org_name,
   )
 
   progress_data <- purrr::map_dfr(repo_names, function(repo_name) {
-    cat(glue::glue("Checking {repo_name}...\n"))
+    cat(glue::glue("Checking {repo_name}..."), "\n")
 
     student_id <- resolve_student_id_from_repo(
       repo_name = repo_name,
@@ -442,7 +442,7 @@ create_progress_visualizations <- function(progress_data,
     height = 6
   )
 
-  cat(glue::glue("Visualizations saved to {output_dir}\n"))
+  cat(glue::glue("Visualizations saved to {output_dir}"), "\n")
   invisible(list(completion_distribution = p1, issues_vs_pulls = p2))
 }
 
@@ -532,7 +532,7 @@ Best regards,
     )
   }
 
-  cat(glue::glue("Reminder emails generated for {nrow(incomplete_reviewers)} students\n"))
+  cat(glue::glue("Reminder emails generated for {nrow(incomplete_reviewers)} students"), "\n")
   invisible(incomplete_reviewers)
 }
 
@@ -560,7 +560,7 @@ run_progress_check <- function(org_name,
                                deadline = "[DEADLINE]",
                                instructor_name = "[Your Name]") {
   cat("=== PEER REVIEW PROGRESS CHECK ===\n")
-  cat(glue::glue("Time: {Sys.time()}\n\n"))
+  cat(glue::glue("Time: {Sys.time()}"), "\n\n")
 
   check_github_auth()
 
@@ -605,12 +605,12 @@ run_progress_check <- function(org_name,
   report <- generate_progress_report(progress_data, students, reviewer_assignments)
 
   cat("SUMMARY STATISTICS:\n")
-  cat(glue::glue("Total students: {report$summary$total_students}\n"))
-  cat(glue::glue("Students with complete reviews: {report$summary$students_with_complete_reviews}\n"))
-  cat(glue::glue("Students with partial reviews: {report$summary$students_with_partial_reviews}\n"))
-  cat(glue::glue("Students with no reviews: {report$summary$students_with_no_reviews}\n"))
-  cat(glue::glue("Overall completion rate: {scales::percent(report$summary$overall_completion_rate)}\n"))
-  cat(glue::glue("Repositories with pull requests: {report$summary$repositories_with_pulls}\n\n"))
+  cat(glue::glue("Total students: {report$summary$total_students}"), "\n")
+  cat(glue::glue("Students with complete reviews: {report$summary$students_with_complete_reviews}"), "\n")
+  cat(glue::glue("Students with partial reviews: {report$summary$students_with_partial_reviews}"), "\n")
+  cat(glue::glue("Students with no reviews: {report$summary$students_with_no_reviews}"), "\n")
+  cat(glue::glue("Overall completion rate: {scales::percent(report$summary$overall_completion_rate)}"), "\n")
+  cat(glue::glue("Repositories with pull requests: {report$summary$repositories_with_pulls}"), "\n\n")
 
   date_str <- as.character(Sys.Date())
   readr::write_csv(

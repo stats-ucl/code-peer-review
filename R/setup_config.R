@@ -43,9 +43,13 @@ setup_github_token <- function() {
   cat("  - admin:org (Full control of organizations and teams)\n")
   cat("  - user (Update user data)\n\n")
 
+  if (file.exists(".Renviron")) {
+    readRenviron(".Renviron")
+  }
+
   whoami <- tryCatch(gh::gh_whoami(), error = function(e) NULL)
   if (!is.null(whoami) && !is.null(whoami$login)) {
-    cat(glue::glue("GitHub token is already configured for user: {whoami$login}\n"))
+    cat(glue::glue("GitHub token is already configured for user: {whoami$login}"), "\n")
     if (!interactive()) {
       return(invisible(NULL))
     }
@@ -63,7 +67,7 @@ setup_github_token <- function() {
 
   cat("Choose how to configure your GitHub token:\n")
   cat("1. Use gitcreds credential store (Recommended: usethis::create_github_token() + gitcreds::gitcreds_set())\n")
-  cat("2. Edit project .Renviron file (usethis::edit_r_environ(scope = 'project'))\n\n")
+  cat("2. Save token to project .Renviron file\n\n")
 
   method <- trimws(readline("Choose method (1 or 2): "))
 
@@ -79,10 +83,20 @@ setup_github_token <- function() {
     gitcreds::gitcreds_set()
     cat("Token stored in gitcreds credential store.\n")
   } else if (method == "2") {
-    cat("Opening project .Renviron. Add a line with:\n")
-    cat("GITHUB_TOKEN=your_token_here\n")
-    usethis::edit_r_environ(scope = "project")
-    cat("IMPORTANT: Save .Renviron and restart your R session for changes to take effect!\n")
+    token <- trimws(readline("Enter your GitHub token (or press Enter to open .Renviron in editor): "))
+    if (nzchar(token)) {
+      readr::write_file(paste0("GITHUB_TOKEN=", token, "\n"), ".Renviron")
+      Sys.setenv(GITHUB_TOKEN = token)
+      readRenviron(".Renviron")
+      cat("Token saved to .Renviron and loaded into the current R session.\n")
+    } else {
+      cat("Opening project .Renviron. Add a line with:\n")
+      cat("GITHUB_TOKEN=your_token_here\n")
+      usethis::edit_r_environ(scope = "project")
+      if (file.exists(".Renviron")) {
+        readRenviron(".Renviron")
+      }
+    }
   } else {
     cat("Skipping token configuration.\n")
   }
@@ -111,7 +125,7 @@ create_sample_student_list <- function(filename = "student_list.csv", overwrite 
         return(invisible(filename))
       }
     } else {
-      cat(glue::glue("{filename} already exists; skipping.\n"))
+      cat(glue::glue("{filename} already exists; skipping."), "\n")
       return(invisible(filename))
     }
   }
@@ -130,7 +144,7 @@ create_sample_student_list <- function(filename = "student_list.csv", overwrite 
   )
 
   readr::write_csv(sample_data, filename)
-  cat(glue::glue("Sample student list created: {filename}\n"))
+  cat(glue::glue("Sample student list created: {filename}"), "\n")
   cat("Please edit this file with your actual student data.\n")
   cat("Required columns: student_id, github_username, ucl_email, name\n")
 
@@ -164,7 +178,7 @@ create_directory_structure <- function(submissions_dir = "submissions",
   for (dir in dirs) {
     if (!dir.exists(dir)) {
       dir.create(dir, recursive = TRUE)
-      cat(glue::glue("Created directory: {dir}\n"))
+      cat(glue::glue("Created directory: {dir}"), "\n")
     }
   }
 
@@ -202,7 +216,7 @@ summary(data$mpg)
       }
     }
 
-    cat(glue::glue("Sample submission structure created in {submissions_dir}/ directory\n"))
+    cat(glue::glue("Sample submission structure created in {submissions_dir}/ directory"), "\n")
   }
 
   invisible(dirs)
@@ -275,9 +289,9 @@ report <- run_progress_check(
   for (fname in names(scripts)) {
     if (!file.exists(fname) || overwrite) {
       readr::write_file(scripts[[fname]], fname)
-      cat(glue::glue("Created starter script: {fname}\n"))
+      cat(glue::glue("Created starter script: {fname}"), "\n")
     } else {
-      cat(glue::glue("{fname} already exists; skipping.\n"))
+      cat(glue::glue("{fname} already exists; skipping."), "\n")
     }
   }
 
@@ -302,6 +316,10 @@ validate_configuration <- function(student_list_path = "student_list.csv",
 
   issues <- character()
 
+  if (file.exists(".Renviron")) {
+    readRenviron(".Renviron")
+  }
+
   # Check GitHub authentication via gh_whoami() or environment variables
   whoami <- tryCatch(gh::gh_whoami(), error = function(e) NULL)
   has_token <- (!is.null(whoami) && (!is.null(whoami$login) || !is.null(whoami$token))) ||
@@ -311,7 +329,7 @@ validate_configuration <- function(student_list_path = "student_list.csv",
   if (!has_token) {
     issues <- c(issues, "\u274c GitHub token not configured (run `setup_github_token()`)")
   } else if (!is.null(whoami$login)) {
-    cat(glue::glue("\u2705 GitHub authenticated as: {whoami$login}\n"))
+    cat(glue::glue("\u2705 GitHub authenticated as: {whoami$login}"), "\n")
   } else {
     cat("\u2705 GitHub token is set\n")
   }
@@ -339,7 +357,7 @@ validate_configuration <- function(student_list_path = "student_list.csv",
           glue::glue("\u274c Missing columns in {student_list_path}: {paste(missing_cols, collapse = ', ')}")
         )
       } else {
-        cat(glue::glue("\u2705 Student list file valid ({nrow(students)} students)\n"))
+        cat(glue::glue("\u2705 Student list file valid ({nrow(students)} students)"), "\n")
       }
     }
   } else {
@@ -350,7 +368,7 @@ validate_configuration <- function(student_list_path = "student_list.csv",
   if (dir.exists(submissions_path)) {
     n_folders <- length(list.dirs(submissions_path, recursive = FALSE))
     if (n_folders > 0) {
-      cat(glue::glue("\u2705 Submissions directory exists ({n_folders} student folders)\n"))
+      cat(glue::glue("\u2705 Submissions directory exists ({n_folders} student folders)"), "\n")
     } else {
       issues <- c(issues, glue::glue("\u26a0\ufe0f  Submissions directory '{submissions_path}' is empty"))
     }
@@ -512,8 +530,8 @@ run_automation(
 test_github_connection <- function(org_name = NULL) {
   tryCatch({
     user_info <- gh::gh("GET /user")
-    cat(glue::glue("\u2705 Successfully connected to GitHub as: {user_info$login}\n"))
-    cat(glue::glue("Profile: {user_info$html_url}\n"))
+    cat(glue::glue("\u2705 Successfully connected to GitHub as: {user_info$login}"), "\n")
+    cat(glue::glue("Profile: {user_info$html_url}"), "\n")
 
     if (is.null(org_name) && interactive()) {
       org_name <- trimws(readline("Enter your organization name to test access (or press Enter to skip): "))
@@ -521,7 +539,7 @@ test_github_connection <- function(org_name = NULL) {
 
     if (!is.null(org_name) && nzchar(org_name)) {
       org_info <- gh::gh("GET /orgs/{org}", org = org_name)
-      cat(glue::glue("\u2705 Organization access confirmed: {org_info$login}\n"))
+      cat(glue::glue("\u2705 Organization access confirmed: {org_info$login}"), "\n")
     }
 
     invisible(TRUE)

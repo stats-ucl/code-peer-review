@@ -39,7 +39,7 @@ upload_student_files <- function(repo_name, student_id, org_name, base_path) {
     if (success) success_count <- success_count + 1L
   }
 
-  cat(glue::glue("Uploaded {success_count}/{length(rel_files)} files for {student_id}\n"))
+  cat(glue::glue("Uploaded {success_count}/{length(rel_files)} files for {student_id}"), "\n")
   return(success_count == length(rel_files))
 }
 
@@ -370,7 +370,7 @@ Best regards,
 
   readr::write_csv(email_data, file.path(output_dir, "email_merge_data.csv"))
 
-  cat(glue::glue("Email templates generated in {output_dir}\n"))
+  cat(glue::glue("Email templates generated in {output_dir}"), "\n")
   invisible(email_data)
 }
 
@@ -488,7 +488,7 @@ run_automation <- function(org_name,
     org_name
   )
 
-  cat(glue::glue("Saving results to {output_dir}/...\n"))
+  cat(glue::glue("Saving results to {output_dir}/..."), "\n")
   readr::write_csv(
     distribution_info$student_links,
     file.path(output_dir, "student_repo_links.csv")
@@ -511,14 +511,14 @@ run_automation <- function(org_name,
   )
 
   cat("\n=== SETUP COMPLETE ===\n")
-  cat(glue::glue("Repositories created: {sum(repo_results$repo_created)}/{nrow(repo_results)}\n"))
-  cat(glue::glue("Files uploaded: {sum(repo_results$files_uploaded)}/{nrow(repo_results)}\n"))
-  cat(glue::glue("Total reviewer assignments: {nrow(reviewer_assignments)}\n"))
-  cat(glue::glue("\nCheck the '{output_dir}/' folder for distribution files:\n"))
-  cat(glue::glue("- {file.path(output_dir, 'student_repo_links.csv')}: URLs for each student\n"))
-  cat(glue::glue("- {file.path(output_dir, 'reviewer_assignments.csv')}: Who reviews whom\n"))
-  cat(glue::glue("- {file.path(output_dir, 'teacher_summary.csv')}: Complete instructor overview\n"))
-  cat(glue::glue("- {file.path(output_dir, 'email_templates')}/: Email templates and mail merge CSV\n"))
+  cat(glue::glue("Repositories created: {sum(repo_results$repo_created)}/{nrow(repo_results)}"), "\n")
+  cat(glue::glue("Files uploaded: {sum(repo_results$files_uploaded)}/{nrow(repo_results)}"), "\n")
+  cat(glue::glue("Total reviewer assignments: {nrow(reviewer_assignments)}"), "\n")
+  cat(glue::glue("\nCheck the '{output_dir}/' folder for distribution files:"), "\n")
+  cat(glue::glue("- {file.path(output_dir, 'student_repo_links.csv')}: URLs for each student"), "\n")
+  cat(glue::glue("- {file.path(output_dir, 'reviewer_assignments.csv')}: Who reviews whom"), "\n")
+  cat(glue::glue("- {file.path(output_dir, 'teacher_summary.csv')}: Complete instructor overview"), "\n")
+  cat(glue::glue("- {file.path(output_dir, 'email_templates')}/: Email templates and mail merge CSV"), "\n")
 
   invisible(list(
     repo_results = repo_results,

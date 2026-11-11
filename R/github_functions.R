@@ -9,9 +9,12 @@
 #' @return Logical `TRUE` if authenticated; throws an error otherwise.
 #' @export
 check_github_auth <- function() {
+  if (file.exists(".Renviron")) {
+    readRenviron(".Renviron")
+  }
   tryCatch({
     user_info <- gh::gh("GET /user")
-    cat(glue::glue("Authenticated as: {user_info$login}\n"))
+    cat(glue::glue("Authenticated as: {user_info$login}"), "\n")
     return(TRUE)
   }, error = function(e) {
     stop(
@@ -67,7 +70,7 @@ validate_student_data <- function(students) {
     )
   }
 
-  cat(glue::glue("Validated data for {nrow(students)} students\n"))
+  cat(glue::glue("Validated data for {nrow(students)} students"), "\n")
   invisible(students)
 }
 
@@ -136,7 +139,7 @@ create_student_repo <- function(repo_name, github_username, org_name) {
     )
 
     if (!is.null(existing)) {
-      cat(glue::glue("Repository already exists: {repo_name}\n"))
+      cat(glue::glue("Repository already exists: {repo_name}"), "\n")
       return(TRUE)
     }
 
@@ -150,7 +153,7 @@ create_student_repo <- function(repo_name, github_username, org_name) {
       has_issues = TRUE
     )
 
-    cat(glue::glue("Created repository: {repo_name}\n"))
+    cat(glue::glue("Created repository: {repo_name}"), "\n")
     return(TRUE)
   }, error = function(e) {
     warning(glue::glue("Failed to create repository {repo_name}: {e$message}"))
@@ -195,7 +198,7 @@ setup_repo_structure <- function(repo_name,
       )
     }
 
-    cat(glue::glue("Set up structure for: {repo_name}\n"))
+    cat(glue::glue("Set up structure for: {repo_name}"), "\n")
     return(TRUE)
   }, error = function(e) {
     warning(glue::glue("Failed to setup structure for {repo_name}: {e$message}"))
@@ -261,7 +264,7 @@ create_reviewer_branches <- function(repo_name, org_name, reviews_per_student = 
       }
     }
 
-    cat(glue::glue("Created {reviews_per_student} reviewer branch(es) for: {repo_name}\n"))
+    cat(glue::glue("Created {reviews_per_student} reviewer branch(es) for: {repo_name}"), "\n")
     return(TRUE)
   }, error = function(e) {
     warning(glue::glue("Failed to create reviewer branches for {repo_name}: {e$message}"))
@@ -493,7 +496,7 @@ set_reviewer_permissions <- function(repo_name,
         permission = permission
       )
 
-      cat(glue::glue("Added {user} ({role}) as collaborator to {repo_name}\n"))
+      cat(glue::glue("Added {user} ({role}) as collaborator to {repo_name}"), "\n")
 
       dplyr::tibble(
         repo_name = repo_name,
