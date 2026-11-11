@@ -54,7 +54,14 @@ test_that("assign_peer_reviewers produces balanced, self-free, duplicate-free as
   assignments_repeat <- assign_peer_reviewers(students, reviews_per_student = 2, seed = 42)
   expect_equal(assignments, assignments_repeat)
 
+  # 2 students with reviews_per_student = 1 swaps them
+  swap_assignments <- assign_peer_reviewers(students[1:2, ], reviews_per_student = 1)
+  expect_equal(nrow(swap_assignments), 2L)
+  expect_equal(swap_assignments$reviewed_student_id, c("101", "102"))
+  expect_equal(swap_assignments$reviewer_student_id, c("102", "101"))
+
   # Edge cases
+  expect_error(assign_peer_reviewers(students[1, ], reviews_per_student = 1), "Need at least 2 students")
   expect_error(assign_peer_reviewers(students[1:2, ], reviews_per_student = 2), "Need at least 3 students")
   expect_error(assign_peer_reviewers(students[1:3, ], reviews_per_student = 3), "Need at least 4 students")
 })

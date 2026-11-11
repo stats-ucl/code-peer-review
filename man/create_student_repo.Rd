@@ -11,12 +11,13 @@ create_student_repo(repo_name, github_username, org_name)
 
 \item{github_username}{Student's GitHub username.}
 
-\item{org_name}{GitHub organization name.}
+\item{org_name}{GitHub organization name (or authenticated user's username).}
 }
 \value{
 Logical \code{TRUE} if created (or already exists), \code{FALSE} on error.
 }
 \description{
-Creates a private GitHub repository in \code{org_name} for a student's submission.
+Creates a private GitHub repository in \code{org_name} (or under the authenticated
+user's account if \code{org_name} matches their login) for a student's submission.
 If the repository already exists, returns \code{TRUE} without failing.
 }

@@ -120,14 +120,42 @@ put_repo_file <- function(org_name, repo_name, github_path, content_encoded, mes
   }
 }
 
+#' Check that target GitHub organization or user account exists
+#'
+#' @param org_name GitHub organization name (or authenticated user's login).
+#'
+#' @return Logical `TRUE` if valid; stops with an informative error otherwise.
+#' @keywords internal
+verify_github_owner <- function(org_name) {
+  user_info <- gh::gh("GET /user")
+  if (tolower(org_name) == tolower(user_info$login)) {
+    return(TRUE)
+  }
+
+  tryCatch({
+    gh::gh("GET /orgs/{org}", org = org_name)
+    return(TRUE)
+  }, error = function(e) {
+    stop(
+      glue::glue(
+        "GitHub organization '{org_name}' was not found (or your token lacks access to it).\n",
+        "Please set `org_name` to an existing GitHub organization that you administer, ",
+        "or use your GitHub username ('{user_info$login}') to create repositories under your personal account."
+      ),
+      call. = FALSE
+    )
+  })
+}
+
 #' Create a repository for a student
 #'
-#' Creates a private GitHub repository in `org_name` for a student's submission.
+#' Creates a private GitHub repository in `org_name` (or under the authenticated
+#' user's account if `org_name` matches their login) for a student's submission.
 #' If the repository already exists, returns `TRUE` without failing.
 #'
 #' @param repo_name Name of the repository to create.
 #' @param github_username Student's GitHub username.
-#' @param org_name GitHub organization name.
+#' @param org_name GitHub organization name (or authenticated user's username).
 #'
 #' @return Logical `TRUE` if created (or already exists), `FALSE` on error.
 #' @export
@@ -143,15 +171,29 @@ create_student_repo <- function(repo_name, github_username, org_name) {
       return(TRUE)
     }
 
-    gh::gh(
-      "POST /orgs/{org}/repos",
-      org = org_name,
-      name = repo_name,
-      description = glue::glue("Code submission repository for {github_username}"),
-      private = TRUE,
-      auto_init = TRUE,
-      has_issues = TRUE
-    )
+    user_info <- tryCatch(gh::gh("GET /user"), error = function(e) list(login = ""))
+    is_personal_account <- tolower(org_name) == tolower(user_info$login %||% "")
+
+    if (is_personal_account) {
+      gh::gh(
+        "POST /user/repos",
+        name = repo_name,
+        description = glue::glue("Code submission repository for {github_username}"),
+        private = TRUE,
+        auto_init = TRUE,
+        has_issues = TRUE
+      )
+    } else {
+      gh::gh(
+        "POST /orgs/{org}/repos",
+        org = org_name,
+        name = repo_name,
+        description = glue::glue("Code submission repository for {github_username}"),
+        private = TRUE,
+        auto_init = TRUE,
+        has_issues = TRUE
+      )
+    }
 
     cat(glue::glue("Created repository: {repo_name}"), "\n")
     return(TRUE)

@@ -126,14 +126,14 @@ assign_peer_reviewers <- function(students, reviews_per_student = 2, seed = NULL
     stop("`reviews_per_student` must be at least 1", call. = FALSE)
   }
 
-  if (n_students < 3L) {
-    stop("Need at least 3 students for peer review", call. = FALSE)
+  if (n_students < 2L) {
+    stop("Need at least 2 students for peer review", call. = FALSE)
   }
 
   if (n_students <= reviews_per_student) {
     stop(
       glue::glue(
-        "Need at least {reviews_per_student + 1} students to assign {reviews_per_student} distinct reviewers per student"
+        "Need at least {reviews_per_student + 1} students to assign {reviews_per_student} distinct reviewer(s) per student"
       ),
       call. = FALSE
     )
@@ -404,6 +404,7 @@ run_automation <- function(org_name,
                            instructor_name = "[Your Name]",
                            seed = NULL) {
   check_github_auth()
+  verify_github_owner(org_name)
 
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -416,6 +417,13 @@ run_automation <- function(org_name,
     show_col_types = FALSE
   )
   students <- validate_student_data(students)
+
+  cat("Assigning peer reviewers...\n")
+  reviewer_assignments <- assign_peer_reviewers(
+    students,
+    reviews_per_student = reviews_per_student,
+    seed = seed
+  )
 
   cat("Creating repositories...\n")
   repo_results <- students %>%
@@ -455,13 +463,6 @@ run_automation <- function(org_name,
         ~ create_reviewer_branches(.x, org_name, reviews_per_student = reviews_per_student)
       )
     )
-
-  cat("Assigning peer reviewers...\n")
-  reviewer_assignments <- assign_peer_reviewers(
-    students,
-    reviews_per_student = reviews_per_student,
-    seed = seed
-  )
 
   cat("Setting repository permissions for authors and reviewers...\n")
   permission_results <- purrr::pmap_dfr(
