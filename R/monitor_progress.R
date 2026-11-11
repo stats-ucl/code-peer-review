@@ -553,7 +553,7 @@ Best regards,
 #'
 #' @return The progress report list returned by [generate_progress_report()].
 #' @export
-run_progress_check <- function(org_name,
+run_progress_check <- function(org_name = NULL,
                                assignment_name = "assignment-1",
                                student_list_path = "student_list.csv",
                                output_dir = "output",
@@ -563,6 +563,7 @@ run_progress_check <- function(org_name,
   cat(glue::glue("Time: {Sys.time()}"), "\n\n")
 
   check_github_auth()
+  org_name <- verify_github_owner(org_name)
 
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)

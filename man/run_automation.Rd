@@ -5,7 +5,7 @@
 \title{Run the full peer review setup and automation workflow}
 \usage{
 run_automation(
-  org_name,
+  org_name = NULL,
   assignment_name = "assignment-1",
   student_list_path = "student_list.csv",
   submissions_path = "submissions",

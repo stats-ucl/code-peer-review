@@ -122,29 +122,71 @@ put_repo_file <- function(org_name, repo_name, github_path, content_encoded, mes
 
 #' Check that target GitHub organization or user account exists
 #'
+#' Validates that `org_name` exists on GitHub (either as a GitHub organization
+#' or as the authenticated user's personal account). In an interactive session,
+#' if `org_name` does not exist on GitHub, offers to use the authenticated
+#' user's personal account or open GitHub in the browser to create the
+#' organization.
+#'
 #' @param org_name GitHub organization name (or authenticated user's login).
 #'
-#' @return Logical `TRUE` if valid; stops with an informative error otherwise.
+#' @return Character string of the verified `org_name` (potentially updated to
+#'   the user's personal login if chosen interactively).
 #' @keywords internal
 verify_github_owner <- function(org_name) {
   user_info <- gh::gh("GET /user")
-  if (tolower(org_name) == tolower(user_info$login)) {
-    return(TRUE)
+  if (is.null(org_name) || !nzchar(trimws(org_name))) {
+    cat(glue::glue("No `org_name` specified; using your personal GitHub account: {user_info$login}"), "\n")
+    return(user_info$login)
   }
 
-  tryCatch({
+  if (tolower(org_name) == tolower(user_info$login)) {
+    return(user_info$login)
+  }
+
+  org_exists <- tryCatch({
     gh::gh("GET /orgs/{org}", org = org_name)
-    return(TRUE)
-  }, error = function(e) {
-    stop(
-      glue::glue(
-        "GitHub organization '{org_name}' was not found (or your token lacks access to it).\n",
-        "Please set `org_name` to an existing GitHub organization that you administer, ",
-        "or use your GitHub username ('{user_info$login}') to create repositories under your personal account."
-      ),
-      call. = FALSE
-    )
-  })
+    TRUE
+  }, error = function(e) FALSE)
+
+  if (org_exists) {
+    return(org_name)
+  }
+
+  if (interactive()) {
+    cat(glue::glue("\n\u26a0\ufe0f  GitHub organization '{org_name}' was not found on GitHub."), "\n")
+    cat("Note: GitHub does not allow creating organizations automatically via the API.\n")
+    cat("You can either:\n")
+    cat(glue::glue("  1. Create the repositories under your personal GitHub account ('{user_info$login}') right now"), "\n")
+    cat(glue::glue("  2. Open https://github.com/account/organizations/new in your browser to create '{org_name}' manually"), "\n")
+    cat("  3. Cancel and stop\n\n")
+
+    choice <- trimws(readline("Choose option (1, 2, or 3) [default: 1]: "))
+    if (choice == "" || choice == "1") {
+      cat(glue::glue("Using personal GitHub account '{user_info$login}' instead of '{org_name}'."), "\n")
+      return(user_info$login)
+    } else if (choice == "2") {
+      utils::browseURL("https://github.com/account/organizations/new")
+      readline(glue::glue("Press Enter once you have created the organization '{org_name}' on GitHub..."))
+      recheck <- tryCatch({
+        gh::gh("GET /orgs/{org}", org = org_name)
+        TRUE
+      }, error = function(e) FALSE)
+      if (recheck) {
+        return(org_name)
+      }
+    }
+  }
+
+  stop(
+    glue::glue(
+      "GitHub organization '{org_name}' was not found (or your token lacks access to it).\n",
+      "To fix this, either:\n",
+      "  1. Pass your personal GitHub username (`org_name = \"{user_info$login}\"`) to create repositories under your own account, OR\n",
+      "  2. Create the organization '{org_name}' on GitHub first at https://github.com/account/organizations/new"
+    ),
+    call. = FALSE
+  )
 }
 
 #' Create a repository for a student

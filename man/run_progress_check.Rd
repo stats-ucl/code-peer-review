@@ -5,7 +5,7 @@
 \title{Main progress monitoring function}
 \usage{
 run_progress_check(
-  org_name,
+  org_name = NULL,
   assignment_name = "assignment-1",
   student_list_path = "student_list.csv",
   output_dir = "output",

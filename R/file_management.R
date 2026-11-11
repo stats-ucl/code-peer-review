@@ -394,7 +394,7 @@ Best regards,
 #' @return A list containing `repo_results`, `reviewer_assignments`,
 #'   `permission_results`, and `distribution_info`.
 #' @export
-run_automation <- function(org_name,
+run_automation <- function(org_name = NULL,
                            assignment_name = "assignment-1",
                            student_list_path = "student_list.csv",
                            submissions_path = "submissions",
@@ -404,7 +404,7 @@ run_automation <- function(org_name,
                            instructor_name = "[Your Name]",
                            seed = NULL) {
   check_github_auth()
-  verify_github_owner(org_name)
+  org_name <- verify_github_owner(org_name)
 
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)

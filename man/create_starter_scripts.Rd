@@ -4,10 +4,16 @@
 \alias{create_starter_scripts}
 \title{Create starter workflow scripts}
 \usage{
-create_starter_scripts(overwrite = FALSE)
+create_starter_scripts(
+  overwrite = FALSE,
+  org_name = "UCL-StatSci-STAT0001-2025"
+)
 }
 \arguments{
 \item{overwrite}{Logical; whether to overwrite existing scripts. Defaults to \code{FALSE}.}
+
+\item{org_name}{Default GitHub organization or username to pre-fill in the
+generated scripts. Defaults to \code{"UCL-StatSci-STAT0001-2025"}.}
 }
 \value{
 Invisibly returns the created script filenames.

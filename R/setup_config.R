@@ -104,6 +104,71 @@ setup_github_token <- function() {
   invisible(NULL)
 }
 
+#' Set up or select a GitHub organization (or personal account)
+#'
+#' Checks the authenticated user's GitHub organizations, explains how to create
+#' a new organization on GitHub if needed (since GitHub does not allow creating
+#' organizations via the API), or allows using the user's personal GitHub
+#' username as the repository owner.
+#'
+#' @return Character string of the selected `org_name` (or `"UCL-StatSci-STAT0001-2025"`
+#'   if non-interactive and unauthenticated).
+#' @export
+setup_github_org <- function() {
+  cat("GitHub Organization / Account Setup\n")
+  cat("===================================\n")
+  cat("Student repositories can be created under either:\n")
+  cat("  - A GitHub Organization (recommended for courses so student repos stay separate)\n")
+  cat("  - Your personal GitHub account (quickest for testing or small cohorts)\n\n")
+  cat("NOTE: GitHub does not allow creating organizations via the API.\n")
+  cat("To create a new free organization on GitHub, visit:\n")
+  cat("  https://github.com/account/organizations/new\n\n")
+
+  user_info <- tryCatch(gh::gh("GET /user"), error = function(e) NULL)
+  default_owner <- if (!is.null(user_info$login)) user_info$login else "UCL-StatSci-STAT0001-2025"
+
+  orgs <- tryCatch(gh::gh("GET /user/orgs"), error = function(e) list())
+  org_names <- purrr::map_chr(orgs, ~ as.character(.x$login %||% ""))
+  org_names <- org_names[nzchar(org_names)]
+
+  if (!is.null(user_info$login)) {
+    cat(glue::glue("Authenticated user account: {user_info$login}"), "\n")
+  }
+  if (length(org_names) > 0) {
+    cat(glue::glue("Your existing GitHub organizations: {paste(org_names, collapse = ', ')}"), "\n\n")
+  } else {
+    cat("No existing GitHub organizations found for your account.\n\n")
+  }
+
+  if (!interactive()) {
+    return(invisible(default_owner))
+  }
+
+  cat("Choose where to create student repositories:\n")
+  cat(glue::glue("1. Use your personal GitHub account ('{default_owner}')"), "\n")
+  cat("2. Enter an existing GitHub organization name\n")
+  cat("3. Open GitHub in your browser to create a new organization first\n\n")
+
+  choice <- trimws(readline("Choose option (1, 2, or 3) [default: 1]: "))
+
+  if (choice == "3") {
+    utils::browseURL("https://github.com/account/organizations/new")
+    readline("Press Enter after you have created your organization on GitHub...")
+    org_input <- trimws(readline("Enter the name of your new GitHub organization: "))
+    if (nzchar(org_input)) {
+      return(invisible(org_input))
+    }
+  } else if (choice == "2") {
+    org_input <- trimws(readline("Enter your GitHub organization name: "))
+    if (nzchar(org_input)) {
+      return(invisible(org_input))
+    }
+  }
+
+  cat(glue::glue("Using '{default_owner}' as the repository owner (`org_name`)."), "\n")
+  invisible(default_owner)
+}
+
 #' Create sample student list CSV file
 #'
 #' Generates a template `student_list.csv` file with columns:
@@ -229,15 +294,20 @@ summary(data$mpg)
 #' `run_automation()` and `run_progress_check()`.
 #'
 #' @param overwrite Logical; whether to overwrite existing scripts. Defaults to `FALSE`.
+#' @param org_name Default GitHub organization or username to pre-fill in the
+#'   generated scripts. Defaults to `"UCL-StatSci-STAT0001-2025"`.
 #'
 #' @return Invisibly returns the created script filenames.
 #' @export
-create_starter_scripts <- function(overwrite = FALSE) {
-  main_script <- '# GitHub Code Peer Review - Main Automation Script
+create_starter_scripts <- function(overwrite = FALSE,
+                                   org_name = "UCL-StatSci-STAT0001-2025") {
+  main_script <- glue::glue('# GitHub Code Peer Review - Main Automation Script
 library(codeinput)
 
 # Configuration
-ORG_NAME <- "UCL-StatSci-STAT0001-2025"   # Your GitHub organization
+# Note: ORG_NAME can be a GitHub organization you administer (create one at
+# https://github.com/account/organizations/new) OR your personal GitHub username.
+ORG_NAME <- "{org_name}"                  # Your GitHub organization or username
 ASSIGNMENT_NAME <- "assignment-1"         # Current assignment identifier
 SUBMISSIONS_PATH <- "submissions"         # Path to student submission folders
 STUDENT_LIST_PATH <- "student_list.csv"   # Path to student list CSV
@@ -257,13 +327,13 @@ results <- run_automation(
   deadline = DEADLINE,
   instructor_name = INSTRUCTOR_NAME
 )
-'
+')
 
-  monitor_script <- '# GitHub Code Peer Review - Progress Monitoring Script
+  monitor_script <- glue::glue('# GitHub Code Peer Review - Progress Monitoring Script
 library(codeinput)
 
 # Configuration
-ORG_NAME <- "UCL-StatSci-STAT0001-2025"   # Your GitHub organization
+ORG_NAME <- "{org_name}"                  # Your GitHub organization or username
 ASSIGNMENT_NAME <- "assignment-1"         # Current assignment identifier
 STUDENT_LIST_PATH <- "student_list.csv"   # Path to student list CSV
 OUTPUT_DIR <- "output"                    # Directory containing reviewer_assignments.csv
@@ -279,7 +349,7 @@ report <- run_progress_check(
   deadline = DEADLINE,
   instructor_name = INSTRUCTOR_NAME
 )
-'
+')
 
   scripts <- list(
     "main_automation_script.R" = main_script,
@@ -454,17 +524,21 @@ run_setup <- function(output_dir = "output") {
   setup_github_token()
   cat("\n")
 
-  cat("3. Creating directory structure...\n")
+  cat("3. Setting up GitHub organization / repository owner...\n")
+  selected_org <- setup_github_org()
+  cat("\n")
+
+  cat("4. Creating directory structure...\n")
   create_directory_structure(output_dir = output_dir)
   cat("\n")
 
-  cat("4. Creating sample configuration files and starter scripts...\n")
+  cat("5. Creating sample configuration files and starter scripts...\n")
   create_sample_student_list()
   create_gitignore(output_dir = output_dir)
-  create_starter_scripts()
+  create_starter_scripts(overwrite = TRUE, org_name = selected_org)
   cat("\n")
 
-  cat("5. Validating configuration...\n")
+  cat("6. Validating configuration...\n")
   is_valid <- validate_configuration()
   cat("\n")
 

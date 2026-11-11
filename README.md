@@ -27,7 +27,13 @@ The system allows you to:
 
 ### GitHub Setup
 
-1. **GitHub Organization**: Create or have access to a GitHub organization
+1. **Where Repositories Are Created (`org_name`)**:
+   Student repositories can be created under either:
+   - **A GitHub Organization (recommended for courses)**: Keeps all student repositories separate from your personal repositories. Because GitHub does not allow creating organizations via the API, create one for free on GitHub before running the automation:
+     1. Go to [https://github.com/account/organizations/new](https://github.com/account/organizations/new)
+     2. Select the **Free** plan
+     3. Choose an organization name (e.g., `UCL-StatSci-STAT0001-2025`)
+   - **Your Personal GitHub Account (quickest for testing)**: Pass your own GitHub username as `org_name` (or leave `org_name = NULL` / select Option 1 when prompted) to create the private student repositories directly under your personal account without setting up an organization.
 2. **Personal Access Token**: Create a token with these permissions:
    - `repo` (full control of private repositories)
    - `admin:org` (full control of organizations and teams)

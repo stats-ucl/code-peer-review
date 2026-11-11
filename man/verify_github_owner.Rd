@@ -10,9 +10,14 @@ verify_github_owner(org_name)
 \item{org_name}{GitHub organization name (or authenticated user's login).}
 }
 \value{
-Logical \code{TRUE} if valid; stops with an informative error otherwise.
+Character string of the verified \code{org_name} (potentially updated to
+the user's personal login if chosen interactively).
 }
 \description{
-Check that target GitHub organization or user account exists
+Validates that \code{org_name} exists on GitHub (either as a GitHub organization
+or as the authenticated user's personal account). In an interactive session,
+if \code{org_name} does not exist on GitHub, offers to use the authenticated
+user's personal account or open GitHub in the browser to create the
+organization.
 }
 \keyword{internal}
