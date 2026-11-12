@@ -20,6 +20,8 @@ submitted a review.
 \description{
 Matches each reviewer in \code{expected_reviewers} against the authors of
 peer-review labeled issues, falling back to any issue or pull request opened
-by that reviewer in the repository.
+by that reviewer in the repository. When duplicate usernames exist in
+\code{expected_reviewers} (e.g., single-account multi-student simulation), counts
+distinct reviews submitted by that username.
 }
 \keyword{internal}

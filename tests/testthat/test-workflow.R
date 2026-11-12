@@ -240,3 +240,41 @@ test_that("generate_email_templates populates deadline, instructor, and ucl_emai
 
   unlink(tmp_emails, recursive = TRUE)
 })
+
+test_that("single-account shared github_username disambiguates reviewers by branch or name", {
+  assignment_r1 <- dplyr::tibble(
+    reviewed_student_id = "12345",
+    reviewed_student_name = "Alice Smith",
+    reviewed_github_username = "n8thangreen",
+    reviewer_student_id = "12346",
+    reviewer_name = "Bob Jones",
+    reviewer_github_username = "n8thangreen",
+    reviewer_number = 1L,
+    assigned_branch = "reviewer-1"
+  )
+  assignment_r2 <- dplyr::tibble(
+    reviewed_student_id = "12345",
+    reviewed_student_name = "Alice Smith",
+    reviewed_github_username = "n8thangreen",
+    reviewer_student_id = "12347",
+    reviewer_name = "Carol White",
+    reviewer_github_username = "n8thangreen",
+    reviewer_number = 2L,
+    assigned_branch = "reviewer-2"
+  )
+
+  # Only Bob (reviewer-1) has submitted an issue so far
+  issues <- list(
+    list(
+      user = list(login = "n8thangreen"),
+      title = "Peer Review by Bob Jones (12346)",
+      body = "Review completed on branch: reviewer-1",
+      labels = list(list(name = "peer-review")),
+      updated_at = "2026-11-12T10:00:00Z"
+    )
+  )
+
+  expect_true(is_assignment_completed_in_repo(assignment_r1, issues, list(), shared_username = TRUE))
+  expect_false(is_assignment_completed_in_repo(assignment_r2, issues, list(), shared_username = TRUE))
+  expect_equal(check_completed_reviews(issues, c("n8thangreen", "n8thangreen")), 1L)
+})

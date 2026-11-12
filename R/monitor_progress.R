@@ -38,11 +38,96 @@ has_peer_review_label <- function(issue) {
   "peer-review" %in% tolower(label_names)
 }
 
+#' Check if a specific reviewer assignment has been completed in a repository
+#'
+#' When multiple reviewers on the same repository share a single GitHub username
+#' (e.g., during multi-agent simulations under one account), disambiguates
+#' reviewers by checking whether an issue or pull request from that GitHub user
+#' references the reviewer's `assigned_branch` (`reviewer-1`, `reviewer-2`),
+#' `reviewer_name`, or `reviewer_student_id`.
+#'
+#' @param assignment_row Single-row tibble from `reviewer_assignments`.
+#' @param pure_issues List of pure GitHub issue objects (excluding PRs).
+#' @param all_pulls List of GitHub pull request objects.
+#' @param shared_username Logical; whether multiple reviewers for this repository
+#'   share the same `reviewer_github_username`.
+#'
+#' @return Logical `TRUE` if the assignment is complete, `FALSE` otherwise.
+#' @keywords internal
+is_assignment_completed_in_repo <- function(assignment_row,
+                                            pure_issues,
+                                            all_pulls,
+                                            shared_username = FALSE) {
+  login_target <- tolower(as.character(assignment_row$reviewer_github_username %||% ""))
+  if (!nzchar(login_target)) {
+    return(FALSE)
+  }
+
+  user_issues <- purrr::keep(
+    pure_issues,
+    ~ tolower(as.character(.x$user$login %||% "")) == login_target
+  )
+  user_pulls <- purrr::keep(
+    all_pulls,
+    ~ tolower(as.character(.x$user$login %||% "")) == login_target
+  )
+
+  if (length(user_issues) == 0 && length(user_pulls) == 0) {
+    return(FALSE)
+  }
+
+  if (!shared_username) {
+    return(TRUE)
+  }
+
+  branch <- as.character(assignment_row$assigned_branch %||% "")
+  rev_name <- as.character(assignment_row$reviewer_name %||% "")
+  rev_id <- as.character(assignment_row$reviewer_student_id %||% "")
+
+  matches_metadata <- function(text) {
+    if (!nzchar(text)) return(FALSE)
+    if (nzchar(branch) && grepl(paste0("\\b", branch, "\\b"), text, ignore.case = TRUE)) {
+      return(TRUE)
+    }
+    if (nzchar(rev_name) && grepl(rev_name, text, ignore.case = TRUE, fixed = FALSE)) {
+      return(TRUE)
+    }
+    if (nzchar(rev_id) && grepl(paste0("\\b", rev_id, "\\b"), text, ignore.case = TRUE)) {
+      return(TRUE)
+    }
+    FALSE
+  }
+
+  # 1. Check issues authored by login_target for reviewer metadata (title or body)
+  for (iss in user_issues) {
+    combined <- paste(as.character(iss$title %||% ""), as.character(iss$body %||% ""), sep = "\n")
+    if (matches_metadata(combined)) {
+      return(TRUE)
+    }
+  }
+
+  # 2. Check pull requests authored by login_target for head branch or metadata
+  for (pr in user_pulls) {
+    head_ref <- as.character(pr$head$ref %||% "")
+    if (nzchar(branch) && tolower(head_ref) == tolower(branch)) {
+      return(TRUE)
+    }
+    combined <- paste(as.character(pr$title %||% ""), as.character(pr$body %||% ""), sep = "\n")
+    if (matches_metadata(combined)) {
+      return(TRUE)
+    }
+  }
+
+  FALSE
+}
+
 #' Identify which expected reviewers have submitted a review
 #'
 #' Matches each reviewer in `expected_reviewers` against the authors of
 #' peer-review labeled issues, falling back to any issue or pull request opened
-#' by that reviewer in the repository.
+#' by that reviewer in the repository. When duplicate usernames exist in
+#' `expected_reviewers` (e.g., single-account multi-student simulation), counts
+#' distinct reviews submitted by that username.
 #'
 #' @param issues List of issue objects from [get_repo_issues()].
 #' @param expected_reviewers Character vector of expected reviewer GitHub usernames.
@@ -60,16 +145,42 @@ get_completed_reviewer_logins <- function(issues, expected_reviewers, pulls = li
   pr_from_issues <- purrr::keep(issues, is_pull_request)
   all_pulls <- c(pulls, pr_from_issues)
 
-  # Authors of issues with the 'peer-review' label
-  labeled_issues <- purrr::keep(pure_issues, has_peer_review_label)
-  labeled_authors <- tolower(purrr::map_chr(labeled_issues, ~ as.character(.x$user$login %||% "")))
+  lower_expected <- tolower(expected_reviewers)
+  if (!anyDuplicated(lower_expected)) {
+    # Standard case: distinct GitHub usernames per reviewer
+    labeled_issues <- purrr::keep(pure_issues, has_peer_review_label)
+    labeled_authors <- tolower(purrr::map_chr(labeled_issues, ~ as.character(.x$user$login %||% "")))
 
-  # Fallback: authors of any issue or pull request in the repository
-  any_issue_authors <- tolower(purrr::map_chr(pure_issues, ~ as.character(.x$user$login %||% "")))
-  any_pull_authors <- tolower(purrr::map_chr(all_pulls, ~ as.character(.x$user$login %||% "")))
-  all_authors <- unique(c(labeled_authors, any_issue_authors, any_pull_authors))
+    any_issue_authors <- tolower(purrr::map_chr(pure_issues, ~ as.character(.x$user$login %||% "")))
+    any_pull_authors <- tolower(purrr::map_chr(all_pulls, ~ as.character(.x$user$login %||% "")))
+    all_authors <- unique(c(labeled_authors, any_issue_authors, any_pull_authors))
 
-  completed_mask <- tolower(expected_reviewers) %in% all_authors
+    completed_mask <- lower_expected %in% all_authors
+    return(expected_reviewers[completed_mask])
+  }
+
+  # Shared-username case: count distinct reviews per login
+  completed_mask <- rep(FALSE, length(expected_reviewers))
+  for (u in unique(lower_expected)) {
+    idxs <- which(lower_expected == u)
+    user_issues <- purrr::keep(pure_issues, ~ tolower(as.character(.x$user$login %||% "")) == u)
+    user_labeled <- purrr::keep(user_issues, has_peer_review_label)
+    user_pulls <- purrr::keep(all_pulls, ~ tolower(as.character(.x$user$login %||% "")) == u)
+
+    n_reviews <- if (length(user_labeled) > 0) {
+      length(user_labeled)
+    } else if (length(user_issues) > 0) {
+      length(user_issues)
+    } else {
+      length(user_pulls)
+    }
+
+    n_done <- min(length(idxs), n_reviews)
+    if (n_done > 0) {
+      completed_mask[idxs[seq_len(n_done)]] <- TRUE
+    }
+  }
+
   expected_reviewers[completed_mask]
 }
 
@@ -154,15 +265,35 @@ monitor_review_progress <- function(org_name,
     pure_issues <- purrr::discard(raw_issues, is_pull_request)
     pulls <- get_repo_pulls(org_name, repo_name)
 
-    expected_reviewers <- reviewer_assignments %>%
-      dplyr::filter(.data$reviewed_student_id == student_id) %>%
-      dplyr::pull(.data$reviewer_github_username)
+    student_assignments <- reviewer_assignments %>%
+      dplyr::filter(.data$reviewed_student_id == student_id)
+    expected_reviewers <- student_assignments$reviewer_github_username
+    has_shared_login <- anyDuplicated(tolower(expected_reviewers)) > 0
 
-    completed_logins <- get_completed_reviewer_logins(
-      issues = pure_issues,
-      expected_reviewers = expected_reviewers,
-      pulls = pulls
-    )
+    if (has_shared_login && nrow(student_assignments) > 0) {
+      row_completed <- purrr::map_lgl(seq_len(nrow(student_assignments)), function(idx) {
+        is_assignment_completed_in_repo(
+          assignment_row = student_assignments[idx, ],
+          pure_issues = pure_issues,
+          all_pulls = pulls,
+          shared_username = TRUE
+        )
+      })
+      completed_logins <- expected_reviewers[row_completed]
+      completed_ids <- as.character(student_assignments$reviewer_student_id[row_completed])
+    } else {
+      completed_logins <- get_completed_reviewer_logins(
+        issues = pure_issues,
+        expected_reviewers = expected_reviewers,
+        pulls = pulls
+      )
+      completed_ids <- as.character(
+        student_assignments$reviewer_student_id[
+          tolower(expected_reviewers) %in% tolower(completed_logins)
+        ]
+      )
+    }
+
     completed_reviews <- length(completed_logins)
     n_expected <- length(expected_reviewers)
 
@@ -176,6 +307,7 @@ monitor_review_progress <- function(org_name,
       completed_reviews = completed_reviews,
       completion_rate = if (n_expected > 0) completed_reviews / n_expected else NA_real_,
       completed_reviewer_usernames = paste(completed_logins, collapse = ", "),
+      completed_reviewer_ids = paste(completed_ids, collapse = ", "),
       last_activity = get_last_activity_date(pure_issues, pulls)
     )
   })
@@ -290,7 +422,7 @@ annotate_assignment_completion <- function(progress_data, reviewer_assignments) 
       "student_id",
       "repo_name",
       "completion_rate",
-      dplyr::any_of("completed_reviewer_usernames")
+      dplyr::any_of(c("completed_reviewer_usernames", "completed_reviewer_ids"))
     )
 
   annotated <- reviewer_assignments %>%
@@ -303,11 +435,16 @@ annotate_assignment_completion <- function(progress_data, reviewer_assignments) 
       by = c("reviewed_student_id" = "student_id")
     )
 
+  has_completed_ids <- "completed_reviewer_ids" %in% names(annotated)
   has_completed_col <- "completed_reviewer_usernames" %in% names(annotated)
 
   annotated$review_completed <- purrr::map_lgl(seq_len(nrow(annotated)), function(i) {
     row <- annotated[i, ]
-    if (has_completed_col && !is.na(row$completed_reviewer_usernames)) {
+    if (has_completed_ids && !is.na(row$completed_reviewer_ids)) {
+      completed_id_vec <- trimws(unlist(strsplit(as.character(row$completed_reviewer_ids), ",")))
+      completed_id_vec <- completed_id_vec[nzchar(completed_id_vec)]
+      as.character(row$reviewer_student_id) %in% completed_id_vec
+    } else if (has_completed_col && !is.na(row$completed_reviewer_usernames)) {
       completed_vec <- trimws(unlist(strsplit(as.character(row$completed_reviewer_usernames), ",")))
       completed_vec <- completed_vec[nzchar(completed_vec)]
       tolower(row$reviewer_github_username) %in% tolower(completed_vec)

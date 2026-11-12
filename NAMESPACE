@@ -37,11 +37,17 @@ export(upload_single_file)
 export(upload_student_files)
 export(validate_configuration)
 export(validate_student_data)
-importFrom(dplyr,"%>%")
-importFrom(dplyr,tibble)
+importFrom(dplyr,
+  "%>%",
+  tibble
+)
 importFrom(glue,glue)
-importFrom(readr,read_csv)
-importFrom(readr,write_csv)
-importFrom(readr,write_file)
-importFrom(rlang,"%||%")
-importFrom(rlang,.data)
+importFrom(readr,
+  read_csv,
+  write_csv,
+  write_file
+)
+importFrom(rlang,
+  "%||%",
+  .data
+)
